@@ -1,0 +1,53 @@
+@use './tokens';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'tnum' 1;
+  // A wall kiosk never wants text selection, callouts or the tap flash.
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+// Set by useTouchCursor while the screen is used by touch: the compositor would
+// otherwise draw a cursor (a hand over buttons) on the Pi. The one !important in
+// the app, because components set `cursor: pointer` on their buttons.
+.-touch {
+  &,
+  *,
+  *::before,
+  *::after {
+    cursor: none !important;
+  }
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}

@@ -1,0 +1,11 @@
+# Open HomeView: `docker compose up -d`, then open http://<this machine>:8080
+services:
+  open-homeview:
+    image: ghcr.io/miladd3/open-homeview:latest
+    container_name: open-homeview
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    env_file: .env # HA_URL and HA_TOKEN, see .env.example
+    volumes:
+      - ./config:/config:ro # put your kiosk.yaml here

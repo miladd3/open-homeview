@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.eslintcache
+*.tsbuildinfo
+.vscode
+# Secrets never go into the image build context
+.env
+.env.*
+!.env.example
+# Your own config is mounted at runtime, never baked in
+kiosk.yaml

@@ -1,0 +1,68 @@
+// Design tokens. Components read these custom properties, so a parent can
+// re-theme any subtree by overriding them.
+:root {
+  color-scheme: dark;
+
+  --font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', system-ui, sans-serif;
+
+  --color-bg: #050507;
+  --color-text: #f5f5f7;
+  --color-text-secondary: rgb(235 235 245 / 60%);
+  --color-text-tertiary: rgb(235 235 245 / 35%);
+  --color-accent: #0a84ff;
+  --color-on: #ffd60a;
+  --color-success: #30d158;
+  --color-danger: #ff453a;
+
+  --glass-bg: rgb(255 255 255 / 8%);
+  --glass-bg-strong: rgb(40 40 46 / 72%);
+  --glass-border: rgb(255 255 255 / 10%);
+  --glass-blur: 30px;
+  --glass-filter: blur(var(--glass-blur)) saturate(180%);
+  --glass-active-bg: rgb(255 255 255 / 92%);
+  --glass-active-text: #1c1c1e;
+
+  --shadow-soft: 0 10px 40px rgb(0 0 0 / 35%);
+  --shadow-dialog: 0 30px 80px rgb(0 0 0 / 55%);
+
+  // Dialogs: the dimmed layer over Home, and the card itself.
+  --scrim-bg: rgb(0 0 0 / 40%);
+  --scrim-filter: blur(24px) saturate(140%);
+  --sheet-bg: var(--glass-bg-strong);
+  --sheet-filter: blur(40px) saturate(180%);
+
+  --radius-s: 14px;
+  --radius-m: 22px;
+  --radius-l: 32px;
+  --radius-pill: 999px;
+
+  --space-xs: 6px;
+  --space-s: 12px;
+  --space-m: 20px;
+  --space-l: 32px;
+  --space-xl: 48px;
+
+  --touch-min: 64px;
+
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 180ms;
+  --duration-base: 320ms;
+  --duration-slow: 520ms;
+}
+
+// `graphics: lite` in kiosk.yaml. Live blur behind glass re-renders whatever is
+// underneath on every frame, which a small GPU like the Pi's can't keep up with
+// during animations. Lite swaps it for solid fills that look nearly the same over
+// the static wallpaper.
+:root.-lite {
+  --glass-bg: rgb(255 255 255 / 10%);
+  --glass-filter: none;
+  --shadow-soft: none;
+  --shadow-dialog: none;
+  --scrim-bg: rgb(0 0 0 / 65%);
+  --scrim-filter: none;
+  --sheet-bg: rgb(34 34 40);
+  --sheet-filter: none;
+}

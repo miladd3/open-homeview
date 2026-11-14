@@ -1,0 +1,180 @@
+# Open HomeView configuration (example).
+#
+# Copy this file to kiosk.yaml and replace the entity IDs with your own (find
+# them in Home Assistant under Settings → Devices & services → Entities).
+#
+# Everything the wall screen shows lives here: rooms, scenes, apps and the
+# Home Assistant entity IDs behind them. The kiosk checks this file every
+# minute and reloads itself when it changes. No restart or rebuild needed.
+#
+# Icons: any name from src/config/icons.ts (e.g. sofa, bed, laptop, bot, tv).
+# Colors: any CSS color. Gradients take two colors: [from, to].
+# The Home Assistant auth proxy only allows the entity IDs listed in this file.
+
+wallpaper: ['#2a2f6b', '#7a3d5c']
+
+# full: frosted-glass blur everywhere. lite: solid fills instead, much lighter on
+# the Raspberry Pi's GPU. Switch and compare on the wall screen.
+graphics: lite
+
+weather: weather.forecast_home
+
+rooms:
+  - id: living-room
+    name: Living Room
+    icon: sofa
+    lights: [light.living_room]
+    scenes:
+      - entity: scene.living_room_rest
+        name: Rest
+        colors: ['#ffb36b', '#ff8a3d']
+      - entity: scene.living_room_city_of_love
+        name: City of Love
+        colors: ['#ff6fb5', '#8a5cff']
+      - entity: scene.living_room_malibu_pink
+        name: Malibu Pink
+        colors: ['#ff9ad5', '#ff5e9c']
+      - entity: scene.living_room_red
+        name: Red
+        colors: ['#ff4d4d', '#c41e3a']
+
+  - id: bedroom
+    name: Bedroom
+    icon: bed
+    lights: [light.bedroom]
+    scenes:
+      - entity: scene.bedroom_cancun
+        name: Cancun
+        colors: ['#ffb347', '#ff5f8f']
+      - entity: scene.bedroom_read
+        name: Read
+        colors: ['#fff4dc', '#ffd89a']
+      - entity: scene.bedroom_rest
+        name: Rest
+        colors: ['#ffb36b', '#ff8a3d']
+      - entity: scene.bedroom_ruby_romance
+        name: Ruby Romance
+        colors: ['#e0115f', '#7a0a3a']
+      - entity: scene.bedroom_relax
+        name: Relax
+        colors: ['#ffd27a', '#ffa94d']
+
+  - id: office
+    name: Office
+    icon: laptop
+    lights: [light.office]
+    scenes:
+      - entity: scene.office_concentrate
+        name: Concentrate
+        colors: ['#f4f8ff', '#bcd6ff']
+      - entity: scene.office_energize
+        name: Energize
+        colors: ['#ffffff', '#9cc8ff']
+      - entity: scene.office_read
+        name: Read
+        colors: ['#fff4dc', '#ffd89a']
+      - entity: scene.office_relax
+        name: Relax
+        colors: ['#ffd27a', '#ffa94d']
+      - entity: scene.office_lily
+        name: Lily
+        colors: ['#ffc2e0', '#c77dff']
+      - entity: scene.office_coastal_nights
+        name: Coastal Nights
+        colors: ['#4fc3f7', '#283593']
+      - entity: scene.office_crazy_mate
+        name: Crazy Mate
+        colors: ['#b4ff5c', '#ff5ec4']
+      - entity: scene.office_nightlight
+        name: Nightlight
+        colors: ['#ff9f43', '#7a3b0c']
+
+# Apps open as a dialog from their icon on the Home screen.
+# Types: vacuum, tv, switch (any on/off entity plus optional sensors), lights,
+# doorbell.
+apps:
+  # Every light on its own, sorted into groups (rooms, floors, lamps vs. spots…).
+  # Leave out `groups` to get one group per room, using the rooms' lights.
+  - id: lights
+    type: lights
+    name: Lights
+    icon: lightbulb
+    colors: ['#ffd60a', '#ff9f0a']
+    groups:
+      - name: Living Room
+        icon: sofa
+        lights:
+          - light.living_room_ceiling
+          - light.living_room_floor_lamp
+          - light.living_room_spot_1
+          - light.living_room_spot_2
+      - name: Bedroom
+        icon: bed
+        lights: [light.bedroom_ceiling, light.bedside_lamp]
+      - name: Office
+        icon: laptop
+        lights: [light.desk_lamp, light.office_spot_1, light.office_spot_2]
+
+  - id: vacuum
+    type: vacuum
+    name: Vacuum
+    icon: bot
+    colors: ['#34c759', '#1f8a3b']
+    entities:
+      vacuum: vacuum.robot_vacuum
+      fullClean: button.robot_vacuum_full_cleaning
+      fullVacuum: button.robot_vacuum_full_vacuum
+      progress: sensor.robot_vacuum_cleaning_progress
+      status: sensor.robot_vacuum_status
+      battery: sensor.robot_vacuum_battery
+
+  - id: tv
+    type: tv
+    name: TV
+    icon: tv
+    colors: ['#5e5ce6', '#3634a3']
+    entities:
+      player: media_player.living_room_tv
+      remote: remote.living_room_tv
+
+  - id: adguard
+    type: switch
+    name: AdGuard
+    icon: shield-check
+    colors: ['#30b0c7', '#0a7285']
+    entities:
+      switch: switch.adguard_home_protection
+      sensors: [sensor.adguard_home_average_processing_speed]
+
+  - id: doorbell
+    type: doorbell
+    name: Doorbell
+    icon: cctv
+    colors: ['#ff9f0a', '#d9520b']
+
+# The doorbell camera opens full screen when `ring` fires.
+doorbell:
+  name: Front Door
+  camera: camera.front_door
+  # Optional: an event entity that fires on a ring. Opens the camera full screen.
+  ring: event.front_door_doorbell
+
+# Swatches in the room dialog. Use `kelvin` for whites, `rgb` for colors.
+colors:
+  - { name: Warm white, kelvin: 2200 }
+  - { name: Soft white, kelvin: 2700 }
+  - { name: Neutral, kelvin: 4000 }
+  - { name: Daylight, kelvin: 6500 }
+  - { name: Red, rgb: [255, 59, 48] }
+  - { name: Orange, rgb: [255, 149, 0] }
+  - { name: Pink, rgb: [255, 55, 145] }
+  - { name: Purple, rgb: [175, 82, 222] }
+  - { name: Blue, rgb: [10, 132, 255] }
+  - { name: Green, rgb: [48, 209, 88] }
+
+timings:
+  screensaverSeconds: 60
+  doorbellAutoCloseSeconds: 60
+
+# Hours (local time) during which the screensaver is dimmed.
+nightHours: { from: 22, to: 7 }
