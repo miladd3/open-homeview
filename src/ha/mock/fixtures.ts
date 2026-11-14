@@ -1,4 +1,4 @@
-import type { HomeConfig } from '@/config/home'
+import type { EventConfig, HomeConfig } from '@/config/home'
 import { kelvinToRgb, type Rgb } from '../lightColor'
 import type { HassEntities, HassEntity } from '../types'
 
@@ -96,13 +96,25 @@ function appEntities(app: HomeConfig['apps'][number]): HassEntity[] {
           const name = id.slice('light.'.length).replace(/_/g, ' ')
           return light(id, name[0]!.toUpperCase() + name.slice(1), i % 3 === 0, 60, 2700)
         })
-    case 'doorbell':
-      return []
+    case 'camera':
+      return [entity(app.entities.camera, 'idle', { friendly_name: app.name })]
   }
+}
+
+/** An `event.*` entity starts with no event yet; anything else starts off its `to` state. */
+function eventEntity(event: EventConfig): HassEntity {
+  if (event.to !== undefined) return entity(event.entityId, event.to === 'on' ? 'off' : 'unknown')
+  return entity(event.entityId, 'unknown', {
+    event_types: event.eventTypes.length ? event.eventTypes : ['ring'],
+    event_type: null,
+  })
 }
 
 export function createFixtures(config: HomeConfig): HassEntities {
   const list: HassEntity[] = [
+    // Before the apps, so an event on an app's own entity (a switch) keeps the app's state.
+    ...config.events.map(eventEntity),
+
     // First, so a room light that is also in the Lights app keeps the room's name.
     ...config.apps.flatMap(appEntities),
 
@@ -135,20 +147,6 @@ export function createFixtures(config: HomeConfig): HassEntities {
             wind_speed: 11,
             wind_speed_unit: 'km/h',
           }),
-        ]
-      : []),
-
-    ...(config.doorbell
-      ? [
-          entity(config.doorbell.cameraEntityId, 'idle', { friendly_name: config.doorbell.name }),
-          ...(config.doorbell.ringEntityId
-            ? [
-                entity(config.doorbell.ringEntityId, 'unknown', {
-                  event_types: ['ring'],
-                  event_type: null,
-                }),
-              ]
-            : []),
         ]
       : []),
   ]

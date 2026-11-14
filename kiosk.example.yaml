@@ -91,9 +91,11 @@ rooms:
         name: Nightlight
         colors: ['#ff9f43', '#7a3b0c']
 
-# Apps open as a dialog from their icon on the Home screen.
+# Apps open as a dialog from their icon on the Home screen (cameras open full
+# screen). Add `hidden: true` to leave an app off the Home screen, so it only
+# opens from an event (see `events` below).
 # Types: vacuum, tv, switch (any on/off entity plus optional sensors), lights,
-# doorbell.
+# camera.
 apps:
   # Every light on its own, sorted into groups (rooms, floors, lamps vs. spots…).
   # Leave out `groups` to get one group per room, using the rooms' lights.
@@ -148,18 +150,33 @@ apps:
       switch: switch.adguard_home_protection
       sensors: [sensor.adguard_home_average_processing_speed]
 
-  - id: doorbell
-    type: doorbell
-    name: Doorbell
+  - id: front-door
+    type: camera
+    name: Front Door
     icon: cctv
     colors: ['#ff9f0a', '#d9520b']
+    entities:
+      camera: camera.front_door
+    # Closes after this long without a touch.
+    autoCloseSeconds: 60
 
-# The doorbell camera opens full screen when `ring` fires.
-doorbell:
-  name: Front Door
-  camera: camera.front_door
-  # Optional: an event entity that fires on a ring. Opens the camera full screen.
-  ring: event.front_door_doorbell
+# Things happening in Home Assistant that open an app on their own, over
+# everything (also wakes the screensaver).
+#   entity: an event.* entity (doorbell ring, button press) fires every time it
+#           changes. Any other entity fires when its state changes to `to`.
+#   open:   the app ID to open.
+events:
+  - entity: event.front_door_doorbell
+    open: front-door
+    # Optional: only these event types fire. Leave out for all.
+    eventTypes: [ring]
+    # Optional: shown on the camera view.
+    message: Someone is at the door
+
+  # Motion on the driveway opens the same camera, without a message:
+  # - entity: binary_sensor.driveway_motion
+  #   to: 'on'
+  #   open: front-door
 
 # Swatches in the room dialog. Use `kelvin` for whites, `rgb` for colors.
 colors:
@@ -176,7 +193,6 @@ colors:
 
 timings:
   screensaverSeconds: 60
-  doorbellAutoCloseSeconds: 60
 
 # Hours (local time) during which the screensaver is dimmed.
 nightHours: { from: 22, to: 7 }

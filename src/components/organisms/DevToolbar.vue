@@ -3,14 +3,21 @@ import { BellRing, Moon } from '@lucide/vue'
 import { onBeforeUnmount, onMounted } from 'vue'
 
 import type { MockConnection } from '@/ha/mock/MockConnection'
+import { useConfigStore } from '@/stores/config'
 
-// Only rendered against the mock: lets you trigger events that would
-// otherwise need real hardware. Keyboard: R = ring, S = screensaver.
+// Only rendered against the mock: lets you fire the kiosk.yaml events, which
+// would otherwise need real hardware. Keyboard: E = first event, S = screensaver.
 const props = defineProps<{ mock: MockConnection }>()
 const emit = defineEmits<{ sleep: [] }>()
 
+const { apps, events } = useConfigStore().home
+const buttons = events.map((event) => ({
+  event,
+  label: apps.find((app) => app.id === event.appId)?.name ?? event.appId,
+}))
+
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'r') props.mock.simulateDoorbellRing()
+  if (event.key === 'e' && events[0]) props.mock.fireEvent(events[0])
   if (event.key === 's') emit('sleep')
 }
 
@@ -21,8 +28,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 <template>
   <div class="dev-toolbar">
     <span class="badge">Mock</span>
-    <button class="action" type="button" @click="mock.simulateDoorbellRing()">
-      <BellRing :size="16" /> Ring
+    <button
+      v-for="({ event, label }, i) in buttons"
+      :key="i"
+      class="action"
+      type="button"
+      :title="`Fire ${event.entityId}`"
+      @click="mock.fireEvent(event)"
+    >
+      <BellRing :size="16" /> {{ label }}
     </button>
     <button class="action" type="button" @click="emit('sleep')"><Moon :size="16" /> Sleep</button>
   </div>

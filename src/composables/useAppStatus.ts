@@ -31,7 +31,7 @@ export function useAppStatus(app: AppConfig): ComputedRef<AppStatus | null> {
       })
     // The Home screen's Lights chip already shows how many lights are on.
     case 'lights':
-    case 'doorbell':
+    case 'camera':
       return computed(() => null)
   }
 }

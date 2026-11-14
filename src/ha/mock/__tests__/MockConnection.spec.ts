@@ -5,7 +5,7 @@ import type { HassEntities } from '@/ha/types'
 import { MockConnection } from '../MockConnection'
 
 const vacuum = vacuumApp.entities
-const doorbellRing = testConfig.doorbell!.ringEntityId!
+const ringEvent = testConfig.events[0]!
 
 describe('MockConnection', () => {
   let conn: MockConnection
@@ -74,9 +74,19 @@ describe('MockConnection', () => {
   })
 
   it('fires a doorbell ring event', () => {
-    conn.simulateDoorbellRing()
-    const ring = latest[doorbellRing]!
+    conn.fireEvent(ringEvent)
+    const ring = latest[ringEvent.entityId]!
     expect(ring.attributes.event_type).toBe('ring')
     expect(Number.isNaN(Date.parse(ring.state))).toBe(false)
+  })
+
+  it('fires a state event by changing to its state', () => {
+    const motion = { entityId: 'binary_sensor.x', appId: 'a', to: 'on', eventTypes: [] }
+    const conn = new MockConnection({ ...testConfig, events: [motion] }, 0)
+    conn.subscribeEntities((next) => (latest = next))
+    expect(latest['binary_sensor.x']?.state).toBe('off')
+    conn.fireEvent(motion)
+    expect(latest['binary_sensor.x']?.state).toBe('on')
+    conn.dispose()
   })
 })

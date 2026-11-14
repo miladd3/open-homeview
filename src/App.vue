@@ -3,12 +3,12 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppDialog from '@/components/organisms/AppDialog.vue'
+import CameraOverlay from '@/components/organisms/CameraOverlay.vue'
 import DevToolbar from '@/components/organisms/DevToolbar.vue'
-import DoorbellOverlay from '@/components/organisms/DoorbellOverlay.vue'
 import RoomDialog from '@/components/organisms/RoomDialog.vue'
 import ScreenSaver from '@/components/organisms/ScreenSaver.vue'
 import { useConfigReload } from '@/composables/useConfigReload'
-import { useDoorbellRing } from '@/composables/useDoorbellRing'
+import { useEvents } from '@/composables/useEvents'
 import { useIdle } from '@/composables/useIdle'
 import { useTouchCursor } from '@/composables/useTouchCursor'
 import { useConfigStore } from '@/stores/config'
@@ -23,7 +23,11 @@ const mock = useEntitiesStore().mock()
 const activeRoom = computed(() => config.home.rooms.find((room) => room.id === kiosk.activeRoomId))
 const activeApp = computed(() => {
   const app = config.home.apps.find((app) => app.id === kiosk.activeAppId)
-  return app?.type === 'doorbell' ? undefined : app
+  return app?.type === 'camera' ? undefined : app
+})
+const camera = computed(() => {
+  const app = config.home.apps.find((app) => app.id === kiosk.camera?.appId)
+  return app?.type === 'camera' ? app : undefined
 })
 const wallpaper = computed(() => ({
   '--wallpaper-from': config.home.wallpaper[0],
@@ -36,7 +40,7 @@ function sleep() {
 }
 
 useIdle(config.home.timings.screensaverAfterMs, sleep)
-useDoorbellRing(() => kiosk.openDoorbell('ring'))
+useEvents((event) => kiosk.openApp(event.appId, { message: event.message }))
 useConfigReload()
 useTouchCursor()
 
@@ -64,12 +68,13 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
       <ScreenSaver v-if="kiosk.screensaver" @wake="kiosk.wake" />
     </Transition>
 
-    <Transition name="doorbell">
-      <DoorbellOverlay
-        v-if="kiosk.doorbell && config.home.doorbell"
-        :doorbell="config.home.doorbell"
-        :reason="kiosk.doorbell.reason"
-        @close="kiosk.closeDoorbell"
+    <Transition name="camera">
+      <CameraOverlay
+        v-if="camera"
+        :key="camera.id"
+        :app="camera"
+        :message="kiosk.camera?.message"
+        @close="kiosk.closeCamera"
       />
     </Transition>
 

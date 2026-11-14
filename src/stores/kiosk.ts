@@ -1,13 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type DoorbellReason = 'ring' | 'manual'
+import { useConfigStore } from './config'
+
+/** A camera app shown full screen, over everything. */
+export interface OpenCamera {
+  appId: string
+  /** Set when an event opened it, e.g. "Someone is at the door". */
+  message?: string
+}
 
 /** UI-level state that overlays the routed views. */
 export const useKioskStore = defineStore('kiosk', () => {
   const activeRoomId = ref<string | null>(null)
   const activeAppId = ref<string | null>(null)
-  const doorbell = ref<{ reason: DoorbellReason } | null>(null)
+  const camera = ref<OpenCamera | null>(null)
   const screensaver = ref(false)
 
   function openRoom(roomId: string) {
@@ -15,7 +22,19 @@ export const useKioskStore = defineStore('kiosk', () => {
     activeRoomId.value = roomId
   }
 
-  function openApp(appId: string) {
+  /**
+   * Opens an app: a camera full screen, anything else as its dialog. Also wakes
+   * the screen, so an event can open an app from the screensaver.
+   */
+  function openApp(appId: string, options: { message?: string } = {}) {
+    const app = useConfigStore().home.apps.find((item) => item.id === appId)
+    screensaver.value = false
+    if (app?.type === 'camera') {
+      closeDialogs()
+      camera.value = { appId, message: options.message }
+      return
+    }
+    // A dialog under a camera stays hidden until the camera closes.
     activeRoomId.value = null
     activeAppId.value = appId
   }
@@ -25,18 +44,12 @@ export const useKioskStore = defineStore('kiosk', () => {
     activeAppId.value = null
   }
 
-  function openDoorbell(reason: DoorbellReason) {
-    screensaver.value = false
-    closeDialogs()
-    doorbell.value = { reason }
-  }
-
-  function closeDoorbell() {
-    doorbell.value = null
+  function closeCamera() {
+    camera.value = null
   }
 
   function sleep() {
-    if (doorbell.value) return
+    if (camera.value) return
     closeDialogs()
     screensaver.value = true
   }
@@ -48,13 +61,12 @@ export const useKioskStore = defineStore('kiosk', () => {
   return {
     activeRoomId,
     activeAppId,
-    doorbell,
+    camera,
     screensaver,
     openRoom,
     openApp,
     closeDialogs,
-    openDoorbell,
-    closeDoorbell,
+    closeCamera,
     sleep,
     wake,
   }

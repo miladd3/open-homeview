@@ -39,11 +39,12 @@ const countedLights = [
 ]
 const lightsOn = computed(() => countedLights.filter((id) => store.get(id)?.state === 'on').length)
 // The config never changes while mounted (an edit reloads the page).
-const appChips = config.home.apps.map((app) => ({ app, status: useAppStatus(app) }))
+// Hidden apps only open from events, so they get no icon or chip.
+const shownApps = config.home.apps.filter((app) => !app.hidden)
+const appChips = shownApps.map((app) => ({ app, status: useAppStatus(app) }))
 
 function openApp(app: AppConfig) {
-  if (app.type === 'doorbell') kiosk.openDoorbell('manual')
-  else kiosk.openApp(app.id)
+  kiosk.openApp(app.id)
 }
 </script>
 
@@ -119,11 +120,11 @@ function openApp(app: AppConfig) {
         </div>
       </section>
 
-      <section v-if="config.home.apps.length" class="section" aria-labelledby="apps-heading">
+      <section v-if="shownApps.length" class="section" aria-labelledby="apps-heading">
         <h2 id="apps-heading" class="heading">Apps</h2>
         <div class="apps">
           <AppIcon
-            v-for="app in config.home.apps"
+            v-for="app in shownApps"
             :key="app.id"
             :label="app.name"
             :icon="icons[app.icon]"

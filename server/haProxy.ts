@@ -2,7 +2,7 @@
 // never hold an HA token. Instead the browser talks to this proxy, which:
 //  - swaps the placeholder token in the WebSocket `auth` message for the real one,
 //  - only allows the entities listed in kiosk.yaml (state and service calls),
-//  - serves the doorbell camera stream with the token added server-side.
+//  - serves camera streams with the token added server-side.
 // It runs inside the Vite dev server (vite.config.ts) and inside the production
 // server (server/app.ts). Plain erasable TypeScript, so Node runs it directly.
 

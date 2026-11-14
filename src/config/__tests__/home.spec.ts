@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { testConfig } from '@/__tests__/testConfig'
 import { ConfigError, parseHomeConfig } from '../home'
 
 const room = { id: 'den', name: 'Den', lights: ['light.den'] }
+const camera = { id: 'door', name: 'Door', type: 'camera', entities: { camera: 'camera.door' } }
 
 describe('parseHomeConfig', () => {
   it('parses the shipped kiosk.yaml', () => {
@@ -14,7 +15,16 @@ describe('parseHomeConfig', () => {
       'vacuum',
       'tv',
       'switch',
-      'doorbell',
+      'camera',
+    ])
+    expect(testConfig.events).toEqual([
+      {
+        entityId: 'event.front_door_doorbell',
+        appId: 'front-door',
+        to: undefined,
+        eventTypes: ['ring'],
+        message: 'Someone is at the door',
+      },
     ])
     expect(testConfig.timings.screensaverAfterMs).toBe(60_000)
   })
@@ -69,15 +79,58 @@ describe('parseHomeConfig', () => {
     const config = parseHomeConfig({
       weather: null,
       rooms: [{ ...room, scenes: ['scene.den_movie'] }],
-      doorbell: { camera: 'camera.door', ring: null },
+      events: null,
     })
     expect(config.rooms[0]!.scenes[0]).toMatchObject({ entityId: 'scene.den_movie' })
     expect(config.weatherEntityId).toBeUndefined()
-    expect(config.doorbell).toEqual({
-      name: 'Doorbell',
-      cameraEntityId: 'camera.door',
-      ringEntityId: undefined,
+    expect(config.events).toEqual([])
+  })
+
+  it('reads camera apps and events', () => {
+    const config = parseHomeConfig({
+      apps: [{ ...camera, hidden: true, autoCloseSeconds: 30 }],
+      events: [{ entity: 'binary_sensor.driveway_motion', to: 'on', open: 'door' }],
     })
+    expect(config.apps[0]).toMatchObject({
+      type: 'camera',
+      hidden: true,
+      entities: { camera: 'camera.door' },
+      autoCloseMs: 30_000,
+    })
+    expect(config.events[0]).toEqual({
+      entityId: 'binary_sensor.driveway_motion',
+      appId: 'door',
+      to: 'on',
+      eventTypes: [],
+      message: undefined,
+    })
+  })
+
+  it('reads the old top-level doorbell as a camera app plus a ring event', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const config = parseHomeConfig({
+      apps: [{ id: 'bell', type: 'doorbell', name: 'Bell', icon: 'cctv' }],
+      doorbell: { name: 'Front Door', camera: 'camera.door', ring: 'event.door_ring' },
+      timings: { doorbellAutoCloseSeconds: 20 },
+    })
+    expect(config.apps[0]).toMatchObject({
+      id: 'bell',
+      type: 'camera',
+      name: 'Bell',
+      hidden: false,
+      entities: { camera: 'camera.door' },
+      autoCloseMs: 20_000,
+    })
+    expect(config.events).toMatchObject([
+      { entityId: 'event.door_ring', appId: 'bell', eventTypes: ['ring'] },
+    ])
+
+    // Without a doorbell app, the camera is added hidden so the ring still opens it.
+    const ringOnly = parseHomeConfig({ doorbell: { camera: 'camera.door', ring: 'event.r' } })
+    expect(ringOnly.apps).toMatchObject([
+      { id: 'doorbell', type: 'camera', name: 'Doorbell', hidden: true },
+    ])
+    expect(ringOnly.events).toMatchObject([{ entityId: 'event.r', appId: 'doorbell' }])
   })
 
   it('lists every problem, not just the first', () => {
@@ -102,9 +155,25 @@ describe('parseHomeConfig', () => {
     ],
     [{ apps: [{ id: 'l', type: 'lights', name: 'L' }] }, 'apps[0].groups needs at least one group'],
     [{ apps: [{ id: 'x', name: 'X', type: 'radio' }] }, 'apps[0].type must be one of'],
+    [{ apps: [{ ...camera, entities: {} }] }, 'apps[0].entities.camera is required'],
     [
-      { apps: [{ id: 'd', name: 'D', type: 'doorbell' }] },
-      'apps[0] needs a top-level doorbell section',
+      { apps: [camera], events: [{ entity: 'event.ring', open: 'dor' }] },
+      'events[0].open "dor" is not an app ID. Did you mean "door"?',
+    ],
+    [
+      { apps: [camera], events: [{ entity: 'binary_sensor.motion', open: 'door' }] },
+      "events[0] needs `to`, the state that fires it (e.g. to: 'on')",
+    ],
+    [
+      { apps: [camera], events: [{ entity: 'event.ring', to: 'on', open: 'door' }] },
+      'events[0].to is not for event.* entities',
+    ],
+    [
+      {
+        apps: [camera],
+        events: [{ entity: 'switch.x', to: 'on', eventTypes: ['ring'], open: 'door' }],
+      },
+      'events[0].eventTypes is only for event.* entities',
     ],
     [{ apps: [{ id: 't', name: 'T', type: 'tv', entities: {} }] }, 'apps[0].entities.player'],
     [{ colors: [{ name: 'Odd', rgb: [1, 2] }] }, 'colors[0].rgb must be [r, g, b]'],

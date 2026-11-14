@@ -36,6 +36,8 @@ interface AppBase {
   name: string
   icon: IconName
   colors: Gradient
+  /** Left off the Home screen; it only opens from an event. */
+  hidden: boolean
 }
 
 export interface VacuumApp extends AppBase {
@@ -73,18 +75,30 @@ export interface LightsApp extends AppBase {
   groups: LightGroup[]
 }
 
-/** Opens the doorbell camera; uses the top-level `doorbell` config. */
-export interface DoorbellApp extends AppBase {
-  type: 'doorbell'
+/** A live camera, shown full screen. */
+export interface CameraApp extends AppBase {
+  type: 'camera'
+  entities: { camera: string }
+  /** Closes after this long without a touch. */
+  autoCloseMs: number
 }
 
-export type AppConfig = VacuumApp | TvApp | SwitchApp | LightsApp | DoorbellApp
+export type AppConfig = VacuumApp | TvApp | SwitchApp | LightsApp | CameraApp
 
-export interface DoorbellConfig {
-  name: string
-  cameraEntityId: string
-  /** HA event entity that fires on a ring. Optional: without it, no auto-open. */
-  ringEntityId?: string
+/** Something happening in Home Assistant that opens an app on its own (a ring opens the camera). */
+export interface EventConfig {
+  entityId: string
+  /** The app to open. */
+  appId: string
+  /**
+   * For any entity but `event.*`: fires when its state changes to this.
+   * `event.*` entities fire on every change, so they leave it out.
+   */
+  to?: string
+  /** For `event.*` entities: only these `event_type`s fire. Empty: all of them. */
+  eventTypes: string[]
+  /** Shown on the camera view, e.g. "Someone is at the door". */
+  message?: string
 }
 
 export interface HomeConfig {
@@ -94,11 +108,10 @@ export interface HomeConfig {
   weatherEntityId?: string
   rooms: RoomConfig[]
   apps: AppConfig[]
-  doorbell?: DoorbellConfig
+  events: EventConfig[]
   colors: ColorPreset[]
   timings: {
     screensaverAfterMs: number
-    doorbellAutoCloseMs: number
     /** How often the kiosk checks kiosk.yaml for changes. */
     configCheckMs: number
   }
@@ -272,6 +285,10 @@ const appBase = {
   name: text,
   icon: icon('house'),
   colors: gradient(DEFAULT_APP_COLORS),
+  hidden: z
+    .boolean()
+    .default(false)
+    .meta({ description: 'Leave it off the Home screen; it then only opens from an event.' }),
 }
 
 const app = z.discriminatedUnion('type', [
@@ -312,9 +329,39 @@ const app = z.discriminatedUnion('type', [
   }),
   object({
     ...appBase,
-    type: z.literal('doorbell').meta({ description: 'Opens the doorbell camera.' }),
-  }),
+    type: z.literal('camera').meta({ description: 'A live camera, full screen.' }),
+    entities: object({ camera: entity('camera') }),
+    autoCloseSeconds: seconds(60, 'Closes after this long without a touch.'),
+  }).transform(({ autoCloseSeconds, ...app }) => ({
+    ...app,
+    autoCloseMs: autoCloseSeconds * 1000,
+  })),
 ])
+
+const event = object({
+  entity: entity(
+    undefined,
+    'What to watch. An event.* entity (like a doorbell ring) fires every time it changes; any other entity needs `to`.',
+  ),
+  open: text.meta({ description: 'ID of the app to open, e.g. a camera app.' }),
+  to: optional(z.union([text, z.number().transform(String)])).meta({
+    description:
+      "Fires when the entity's state changes to this, e.g. 'on'. Not for event.* entities.",
+  }),
+  eventTypes: list(text).meta({
+    description:
+      'For event.* entities: only these event types fire (e.g. [ring]). Leave out for all.',
+  }),
+  message: optional(text).meta({
+    description: 'Shown on the camera view, e.g. "Someone is at the door".',
+  }),
+}).transform((raw): EventConfig => ({
+  entityId: raw.entity,
+  appId: raw.open,
+  to: raw.to,
+  eventTypes: raw.eventTypes,
+  message: raw.message,
+}))
 
 const colorPreset = object({
   name: text,
@@ -339,19 +386,15 @@ export const kioskYamlSchema = object({
   weather: optional(entity('weather')),
   rooms: list(room).meta({ description: 'Room tiles on the Home screen.' }),
   apps: list(app).meta({ description: 'App icons on the Home screen.' }),
-  doorbell: optional(
-    object({
-      name: text.default('Doorbell'),
-      camera: entity('camera'),
-      ring: optional(entity('event', 'Event entity that fires on a ring; opens the camera.')),
-    }),
-  ),
+  events: list(event).meta({
+    description:
+      'Things in Home Assistant that open an app on their own, e.g. a ring opens the camera.',
+  }),
   colors: optional(z.array(colorPreset)).meta({ description: 'Color swatches for lights.' }),
   timings: object({
     screensaverSeconds: seconds(60, 'Idle time before the screensaver.'),
-    doorbellAutoCloseSeconds: seconds(60, 'The doorbell camera closes after this long.'),
     configCheckSeconds: seconds(60, 'How often to check kiosk.yaml for changes.'),
-  }).default({ screensaverSeconds: 60, doorbellAutoCloseSeconds: 60, configCheckSeconds: 60 }),
+  }).default({ screensaverSeconds: 60, configCheckSeconds: 60 }),
   nightHours: object({
     from: z.number().min(0).max(24).default(22),
     to: z.number().min(0).max(24).default(7),
@@ -372,13 +415,35 @@ export const kioskYamlSchema = object({
         seen.add(item.id)
       })
     }
-    raw.apps.forEach((item, i) => {
-      if (item.type === 'doorbell' && !raw.doorbell)
+    const appIds = raw.apps.map((item) => item.id)
+    raw.events.forEach((item, i) => {
+      if (!appIds.includes(item.appId))
         ctx.addIssue({
           code: 'custom',
-          path: ['apps', i],
-          message: 'needs a top-level doorbell section',
+          path: ['events', i, 'open'],
+          message: `"${item.appId}" is not an app ID.${didYouMean(item.appId, appIds)}`,
         })
+      const isEvent = item.entityId.startsWith('event.')
+      if (isEvent && item.to !== undefined)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['events', i, 'to'],
+          message: 'is not for event.* entities (they fire on every change)',
+        })
+      if (!isEvent && item.to === undefined)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['events', i],
+          message: "needs `to`, the state that fires it (e.g. to: 'on')",
+        })
+      if (!isEvent && item.eventTypes.length)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['events', i, 'eventTypes'],
+          message: 'is only for event.* entities',
+        })
+    })
+    raw.apps.forEach((item, i) => {
       if (item.type === 'lights' && !item.groups && !raw.rooms.length)
         ctx.addIssue({
           code: 'custom',
@@ -400,15 +465,10 @@ export const kioskYamlSchema = object({
         raw.rooms.map(({ name, icon, lightEntityIds }) => ({ name, icon, lightEntityIds }))
       return { ...item, groups }
     }),
-    doorbell: raw.doorbell && {
-      name: raw.doorbell.name,
-      cameraEntityId: raw.doorbell.camera,
-      ringEntityId: raw.doorbell.ring,
-    },
+    events: raw.events,
     colors: raw.colors ?? DEFAULT_COLORS,
     timings: {
       screensaverAfterMs: raw.timings.screensaverSeconds * 1000,
-      doorbellAutoCloseMs: raw.timings.doorbellAutoCloseSeconds * 1000,
       configCheckMs: raw.timings.configCheckSeconds * 1000,
     },
     nightHours: raw.nightHours,
@@ -479,9 +539,67 @@ export function configProblems(error: z.ZodError): string[] {
   return error.issues.flatMap((issue) => issueText(issue))
 }
 
+type Raw = Record<string, unknown>
+const isMapping = (value: unknown): value is Raw =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * Old configs had a top-level `doorbell:` (camera + ring) and a `type: doorbell`
+ * app. Rewrites them to a camera app plus an event, so they keep working.
+ * TODO: drop once old configs are gone.
+ */
+export function migrateLegacyConfig(value: unknown): unknown {
+  if (!isMapping(value)) return value
+  const { doorbell, ...config } = value
+  const timings = isMapping(config.timings) ? { ...config.timings } : undefined
+  const autoCloseSeconds = timings?.doorbellAutoCloseSeconds
+  if (timings) delete timings.doorbellAutoCloseSeconds
+  const apps = Array.isArray(config.apps) ? config.apps : []
+  const hasLegacyApp = apps.some((app) => isMapping(app) && app.type === 'doorbell')
+  if (!isMapping(doorbell) && !hasLegacyApp && autoCloseSeconds === undefined) return value
+
+  console.warn(
+    '[config] `doorbell:` is now a `type: camera` app plus an `events:` entry. See kiosk.example.yaml.',
+  )
+  const legacy = isMapping(doorbell) ? doorbell : {}
+  const camera = (app: Raw = { id: 'doorbell', hidden: true }) => ({
+    name: legacy.name ?? 'Doorbell',
+    icon: 'cctv',
+    ...app,
+    type: 'camera',
+    entities: { camera: legacy.camera },
+    ...(autoCloseSeconds !== undefined && { autoCloseSeconds }),
+  })
+  const migratedApps = hasLegacyApp
+    ? apps.map((app) => (isMapping(app) && app.type === 'doorbell' ? camera(app) : app))
+    : isMapping(doorbell)
+      ? [...apps, camera()]
+      : apps
+  const cameraId = (migratedApps.find((app) => isMapping(app) && app.type === 'camera') as Raw)?.id
+  const events = [
+    ...(Array.isArray(config.events) ? config.events : []),
+    ...(legacy.ring && cameraId
+      ? [
+          {
+            entity: legacy.ring,
+            open: cameraId,
+            eventTypes: ['ring'],
+            message: 'Someone is at the door',
+          },
+        ]
+      : []),
+  ]
+  return {
+    ...config,
+    apps: migratedApps,
+    ...(events.length && { events }),
+    ...(timings && { timings }),
+  }
+}
+
 /** Validates the parsed YAML and fills in defaults. Throws `ConfigError` naming the bad keys. */
 export function parseHomeConfig(value: unknown): HomeConfig {
-  const result = kioskYamlSchema.safeParse(value ?? {}, { reportInput: true })
+  const result = kioskYamlSchema.safeParse(migrateLegacyConfig(value ?? {}), { reportInput: true })
   if (result.success) return result.data
   const problems = configProblems(result.error)
   throw new ConfigError(problems.slice(0, 5).join('\n'))

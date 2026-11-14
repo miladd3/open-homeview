@@ -7,12 +7,12 @@ import SwitchPanel from './SwitchPanel.vue'
 import TvPanel from './TvPanel.vue'
 import VacuumPanel from './VacuumPanel.vue'
 
-// Opens the panel for an app's `type`. The doorbell type opens the full-screen
-// camera instead, so it never gets here.
-defineProps<{ app: Exclude<AppConfig, { type: 'doorbell' }> }>()
+// Opens the panel for an app's `type`. Camera apps open full screen instead
+// (CameraOverlay), so they never get here.
+defineProps<{ app: Exclude<AppConfig, { type: 'camera' }> }>()
 const emit = defineEmits<{ close: [] }>()
 
-const panels: Record<Exclude<AppConfig['type'], 'doorbell'>, Component> = {
+const panels: Record<Exclude<AppConfig['type'], 'camera'>, Component> = {
   vacuum: VacuumPanel,
   tv: TvPanel,
   switch: SwitchPanel,

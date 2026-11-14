@@ -1,4 +1,4 @@
-import type { HomeConfig, VacuumApp } from '@/config/home'
+import type { EventConfig, HomeConfig, VacuumApp } from '@/config/home'
 import { kelvinToRgb } from '../lightColor'
 import type {
   ConnectionStatus,
@@ -25,7 +25,6 @@ export class MockConnection implements HaConnection {
   private vacuumProgress = 0
   private scenePresets: Record<string, ScenePreset>
   private vacuum: Partial<VacuumApp['entities']>
-  private doorbellRingId: string | undefined
 
   constructor(
     config: HomeConfig,
@@ -35,7 +34,6 @@ export class MockConnection implements HaConnection {
     this.states = initial
     this.scenePresets = createScenePresets(config)
     this.vacuum = config.apps.find((app) => app.type === 'vacuum')?.entities ?? {}
-    this.doorbellRingId = config.doorbell?.ringEntityId
   }
 
   subscribeEntities(callback: (entities: HassEntities) => void) {
@@ -63,9 +61,16 @@ export class MockConnection implements HaConnection {
     for (const entityId of targets) this.handle(domain, service, entityId, data)
   }
 
-  /** Dev helper: behaves like the UniFi Protect ring event firing. */
-  simulateDoorbellRing() {
-    this.patch(this.doorbellRingId, new Date().toISOString(), { event_type: 'ring' })
+  /** Dev helper: makes a kiosk.yaml event fire, like a doorbell ring from UniFi Protect. */
+  fireEvent(event: EventConfig) {
+    if (event.to !== undefined) {
+      // Step off the state first, so changing to it again counts as a change.
+      if (this.state(event.entityId) === event.to) this.patch(event.entityId, 'unknown')
+      return this.patch(event.entityId, event.to)
+    }
+    const types = this.states[event.entityId]?.attributes.event_types
+    const type = event.eventTypes[0] ?? (Array.isArray(types) ? types[0] : undefined) ?? 'ring'
+    this.patch(event.entityId, new Date().toISOString(), { event_type: type })
   }
 
   dispose() {

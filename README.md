@@ -48,14 +48,14 @@ Images are built for `amd64` and `arm64`. Tags: `latest` (main branch), and `x.y
 | Room dialog | Tap a room tile. On/off switch, brightness slider, color swatches, scenes, and per-light switches for rooms with more lights.            |
 | App dialogs | Tap an app icon (or its status chip): robot vacuum, TV remote, or any on/off entity with sensors (AdGuard).                              |
 | Lights app  | Every light on its own, by group (left). Tap a bulb to toggle it, or the tile for brightness and color. Also opens from the Lights chip. |
-| Doorbell    | Full-screen camera. Opens on ring (over everything) or from the Doorbell app; closes after 60 s without a touch.                         |
+| Camera      | Full-screen camera. Opens from its app icon or from an event (a doorbell ring, over everything); closes after 60 s without a touch.      |
 | Screensaver | After 60 s idle: big clock + weather, dimmed 22:00–07:00, small pixel shift against burn-in.                                             |
 
 Tapping the **icon** on a room tile toggles that room's lights without opening the dialog.
 
 ## Configuration: `kiosk.yaml`
 
-Rooms, scenes, apps, weather, doorbell, color swatches, wallpaper and timings all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
+Rooms, scenes, apps, events, weather, color swatches, wallpaper and timings all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
 
 - In Docker it is mounted at `/config/kiosk.yaml`. Until it exists, the kiosk shows the example, with a **kiosk.yaml** chip on the Home screen explaining what to do.
 - The kiosk checks it every minute and **reloads itself when it changes**, so you never have to touch the screen. Edit the file and the wall screen updates within a minute.
@@ -63,7 +63,9 @@ Rooms, scenes, apps, weather, doorbell, color swatches, wallpaper and timings al
 - Entity IDs that Home Assistant doesn't know show up in the **kiosk.yaml** chip on the Home screen, instead of silently showing "Unavailable".
 - A scene can be written as just its entity ID: `scenes: [scene.bedroom_read]`. Add `name:` and `colors:` only when you want them.
 - Icons are referenced by name from [`src/config/icons.ts`](src/config/icons.ts). Add a Lucide icon there to make it available.
-- App types: `vacuum`, `tv`, `switch` (any on/off entity plus optional sensors), `lights` and `doorbell`.
+- App types: `vacuum`, `tv`, `switch` (any on/off entity plus optional sensors), `lights` and `camera`. Add `hidden: true` to keep an app off the Home screen, so it only opens from an event.
+- `events` open an app on their own, over everything (and out of the screensaver). Each names an `entity` and the app to `open`. An `event.*` entity (a doorbell ring, a button press) fires every time it changes, optionally only for some `eventTypes`. Any other entity fires when it changes `to` a state, e.g. `binary_sensor.driveway_motion` with `to: 'on'`. A `message` shows on the camera view (e.g. "Someone is at the door").
+- The old top-level `doorbell:` section still works: it is read as a camera app plus a ring event. Move to `apps` + `events` when you can.
 - The `lights` app lists `groups`, each with a `name`, an optional `icon` and its `lights`. Groups can be anything (rooms, floors, lamps vs. spots). Leave `groups` out to get one group per room. Room tiles usually point at a whole-room light (e.g. a Hue room), while the Lights app lists the single bulbs.
 
 ### Autocomplete in your editor
@@ -86,7 +88,7 @@ The browser never holds an HA token. It connects to `/api/websocket` on its own 
 
 - swaps the placeholder token in the WebSocket `auth` message for the real one,
 - limits entity subscriptions and service calls to the entity IDs listed in `kiosk.yaml` (no area/device targets, no other API calls),
-- serves `/api/camera_proxy_stream/<camera>` (MJPEG for the doorbell) with the token added, only for cameras in `kiosk.yaml`.
+- serves `/api/camera_proxy_stream/<camera>` (MJPEG for camera apps) with the token added, only for cameras in `kiosk.yaml`.
 
 In production the proxy runs in the same Node process that serves the page ([`server/app.ts`](server/app.ts)). During `npm run dev` the same code runs inside the Vite dev server.
 
@@ -114,7 +116,7 @@ npm run format               # oxfmt (Prettier-compatible output)
 npm run build                # type-check + production build
 ```
 
-Without `HA_URL`/`HA_TOKEN` in `.env.local`, `npm run dev` runs against an in-memory **mock** built from `kiosk.yaml` (or the example). Add `?mock` to any URL to force the mock. In mock mode a small **Mock** toolbar (bottom-right) lets you trigger a doorbell ring or the screensaver. Keyboard: `R` = ring, `S` = sleep.
+Without `HA_URL`/`HA_TOKEN` in `.env.local`, `npm run dev` runs against an in-memory **mock** built from `kiosk.yaml` (or the example). Add `?mock` to any URL to force the mock. In mock mode a small **Mock** toolbar (bottom-right) has a button for each of your `events` (fires it, like a doorbell ring) and one for the screensaver. Keyboard: `E` = first event, `S` = sleep.
 
 ## Structure
 
@@ -125,11 +127,11 @@ src/
   config/               # kiosk.yaml schema + validation (home.ts), loader, icon registry
   ha/                   # HaConnection interface, LiveConnection (home-assistant-js-websocket), mock
   stores/               # config (parsed kiosk.yaml), entities (HA state), kiosk (dialogs, overlays, screensaver)
-  composables/          # useRoomLight, useVacuum, useAppStatus, useConfigReload, useIdle, useDoorbellRing, …
+  composables/          # useRoomLight, useVacuum, useAppStatus, useConfigReload, useIdle, useEvents, …
   components/
     atoms/              # GlassPanel, IconButton, RangeSlider, ProgressBar, ToggleSwitch
     molecules/          # ModalDialog, AppIcon, StatusChip, ClockDisplay, WeatherSummary, SceneButton, ColorPresets, CameraFeed
-    organisms/          # RoomTile, RoomDialog, AppDialog, VacuumPanel, TvPanel, SwitchPanel, LightsPanel (+ LightTile, LightControls), DoorbellOverlay, ScreenSaver, DevToolbar
+    organisms/          # RoomTile, RoomDialog, AppDialog, VacuumPanel, TvPanel, SwitchPanel, LightsPanel (+ LightTile, LightControls), CameraOverlay, ScreenSaver, DevToolbar
   views/                # HomeView, ConfigErrorView
   styles/               # design tokens (CSS custom properties) + base reset
 ```

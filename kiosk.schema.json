@@ -287,6 +287,11 @@
                     "minItems": 2,
                     "maxItems": 2
                   },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the Home screen; it then only opens from an event.",
+                    "type": "boolean"
+                  },
                   "type": {
                     "type": "string",
                     "const": "vacuum",
@@ -459,6 +464,11 @@
                     "minItems": 2,
                     "maxItems": 2
                   },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the Home screen; it then only opens from an event.",
+                    "type": "boolean"
+                  },
                   "type": {
                     "type": "string",
                     "const": "tv",
@@ -578,6 +588,11 @@
                     "items": false,
                     "minItems": 2,
                     "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the Home screen; it then only opens from an event.",
+                    "type": "boolean"
                   },
                   "type": {
                     "type": "string",
@@ -701,6 +716,11 @@
                     "items": false,
                     "minItems": 2,
                     "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the Home screen; it then only opens from an event.",
+                    "type": "boolean"
                   },
                   "type": {
                     "type": "string",
@@ -872,16 +892,43 @@
                     "minItems": 2,
                     "maxItems": 2
                   },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the Home screen; it then only opens from an event.",
+                    "type": "boolean"
+                  },
                   "type": {
                     "type": "string",
-                    "const": "doorbell",
-                    "description": "Opens the doorbell camera."
+                    "const": "camera",
+                    "description": "A live camera, full screen."
+                  },
+                  "entities": {
+                    "type": "object",
+                    "properties": {
+                      "camera": {
+                        "type": "string",
+                        "pattern": "^camera\\.[a-z0-9_]+$",
+                        "x-entity-domain": "camera",
+                        "description": "A camera.* entity ID from Home Assistant."
+                      }
+                    },
+                    "required": [
+                      "camera"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "autoCloseSeconds": {
+                    "default": 60,
+                    "description": "Closes after this long without a touch.",
+                    "type": "number",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
                   "id",
                   "name",
-                  "type"
+                  "type",
+                  "entities"
                 ],
                 "additionalProperties": false
               }
@@ -893,40 +940,78 @@
         }
       ]
     },
-    "doorbell": {
+    "events": {
+      "description": "Things in Home Assistant that open an app on their own, e.g. a ring opens the camera.",
       "anyOf": [
         {
-          "type": "object",
-          "properties": {
-            "name": {
-              "default": "Doorbell",
-              "type": "string",
-              "minLength": 1
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entity": {
+                "type": "string",
+                "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                "x-entity-domain": "*",
+                "description": "What to watch. An event.* entity (like a doorbell ring) fires every time it changes; any other entity needs `to`."
+              },
+              "open": {
+                "type": "string",
+                "minLength": 1,
+                "description": "ID of the app to open, e.g. a camera app."
+              },
+              "to": {
+                "description": "Fires when the entity's state changes to this, e.g. 'on'. Not for event.* entities.",
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "eventTypes": {
+                "description": "For event.* entities: only these event types fire (e.g. [ring]). Leave out for all.",
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "message": {
+                "description": "Shown on the camera view, e.g. \"Someone is at the door\".",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
             },
-            "camera": {
-              "type": "string",
-              "pattern": "^camera\\.[a-z0-9_]+$",
-              "x-entity-domain": "camera",
-              "description": "A camera.* entity ID from Home Assistant."
-            },
-            "ring": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^event\\.[a-z0-9_]+$",
-                  "x-entity-domain": "event",
-                  "description": "Event entity that fires on a ring; opens the camera."
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            }
-          },
-          "required": [
-            "camera"
-          ],
-          "additionalProperties": false
+            "required": [
+              "entity",
+              "open"
+            ],
+            "additionalProperties": false
+          }
         },
         {
           "type": "null"
@@ -997,7 +1082,6 @@
     "timings": {
       "default": {
         "screensaverSeconds": 60,
-        "doorbellAutoCloseSeconds": 60,
         "configCheckSeconds": 60
       },
       "type": "object",
@@ -1005,12 +1089,6 @@
         "screensaverSeconds": {
           "default": 60,
           "description": "Idle time before the screensaver.",
-          "type": "number",
-          "exclusiveMinimum": 0
-        },
-        "doorbellAutoCloseSeconds": {
-          "default": 60,
-          "description": "The doorbell camera closes after this long.",
           "type": "number",
           "exclusiveMinimum": 0
         },

@@ -5,22 +5,21 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import IconButton from '@/components/atoms/IconButton.vue'
 import CameraFeed from '@/components/molecules/CameraFeed.vue'
 import ClockDisplay from '@/components/molecules/ClockDisplay.vue'
-import type { DoorbellConfig } from '@/config/home'
-import { useConfigStore } from '@/stores/config'
-import type { DoorbellReason } from '@/stores/kiosk'
+import type { CameraApp } from '@/config/home'
 
-const props = defineProps<{ doorbell: DoorbellConfig; reason: DoorbellReason }>()
+// A camera app, full screen over everything. Opens from its icon or from an event
+// (a doorbell ring), which also passes the message to show.
+const props = defineProps<{ app: CameraApp; message?: string }>()
 const emit = defineEmits<{ close: [] }>()
 
-// Closes on its own once nobody has touched it for `doorbellAutoCloseMs`.
-const { doorbellAutoCloseMs } = useConfigStore().home.timings
-const remainingMs = ref(doorbellAutoCloseMs)
+// Closes on its own once nobody has touched it for the app's `autoCloseMs`.
+const remainingMs = ref(props.app.autoCloseMs)
 let deadline = 0
 let ticker: ReturnType<typeof setInterval> | undefined
 
 function resetCountdown() {
-  deadline = Date.now() + doorbellAutoCloseMs
-  remainingMs.value = doorbellAutoCloseMs
+  deadline = Date.now() + props.app.autoCloseMs
+  remainingMs.value = props.app.autoCloseMs
 }
 
 onMounted(() => {
@@ -34,22 +33,21 @@ onMounted(() => {
 onBeforeUnmount(() => clearInterval(ticker))
 
 const remainingSeconds = computed(() => Math.ceil(remainingMs.value / 1000))
-const isRing = computed(() => props.reason === 'ring')
 </script>
 
 <template>
   <div
-    class="doorbell-overlay"
+    class="camera-overlay"
     role="dialog"
     aria-modal="true"
-    aria-label="Doorbell camera"
+    :aria-label="`${app.name} camera`"
     @pointerdown="resetCountdown"
   >
-    <CameraFeed class="feed" :entity-id="doorbell.cameraEntityId" />
+    <CameraFeed class="feed" :entity-id="app.entities.camera" />
 
     <header class="topbar">
       <div class="titles">
-        <h2 class="title">{{ doorbell.name }}</h2>
+        <h2 class="title">{{ app.name }}</h2>
         <span class="live">Live</span>
       </div>
       <ClockDisplay class="clock" />
@@ -59,9 +57,9 @@ const isRing = computed(() => props.reason === 'ring')
     </header>
 
     <footer class="bottombar">
-      <p v-if="isRing" class="ring">
+      <p v-if="message" class="message">
         <BellRing class="icon" :size="30" />
-        Someone is at the door
+        {{ message }}
       </p>
       <p class="countdown">Closes in {{ remainingSeconds }}s</p>
     </footer>
@@ -69,7 +67,7 @@ const isRing = computed(() => props.reason === 'ring')
 </template>
 
 <style scoped lang="scss">
-.doorbell-overlay {
+.camera-overlay {
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -134,7 +132,7 @@ const isRing = computed(() => props.reason === 'ring')
     justify-content: space-between;
   }
 
-  > .bottombar > .ring {
+  > .bottombar > .message {
     display: flex;
     align-items: center;
     gap: var(--space-s);
@@ -148,7 +146,7 @@ const isRing = computed(() => props.reason === 'ring')
     animation: pulse 1.6s ease-in-out infinite;
   }
 
-  > .bottombar > .ring > .icon {
+  > .bottombar > .message > .icon {
     color: var(--color-on);
   }
 
@@ -165,22 +163,22 @@ const isRing = computed(() => props.reason === 'ring')
   }
 }
 
-// <Transition name="doorbell"> hooks
-.doorbell-enter-active,
-.doorbell-leave-active {
+// <Transition name="camera"> hooks
+.camera-enter-active,
+.camera-leave-active {
   transition:
     opacity var(--duration-base) ease,
     transform var(--duration-slow) var(--ease-spring);
 }
 
-.doorbell-enter-from,
-.doorbell-leave-to {
+.camera-enter-from,
+.camera-leave-to {
   opacity: 0;
   transform: scale(1.04);
 }
 
 // Fading out: let taps through to the screen underneath.
-.doorbell-leave-active {
+.camera-leave-active {
   pointer-events: none;
 }
 </style>
