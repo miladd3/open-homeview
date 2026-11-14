@@ -65,6 +65,27 @@ describe('parseHomeConfig', () => {
     })
   })
 
+  it('accepts a scene as just its entity ID, and empty keys as not set', () => {
+    const config = parseHomeConfig({
+      weather: null,
+      rooms: [{ ...room, scenes: ['scene.den_movie'] }],
+      doorbell: { camera: 'camera.door', ring: null },
+    })
+    expect(config.rooms[0]!.scenes[0]).toMatchObject({ entityId: 'scene.den_movie' })
+    expect(config.weatherEntityId).toBeUndefined()
+    expect(config.doorbell).toEqual({
+      name: 'Doorbell',
+      cameraEntityId: 'camera.door',
+      ringEntityId: undefined,
+    })
+  })
+
+  it('lists every problem, not just the first', () => {
+    expect(() =>
+      parseHomeConfig({ graphics: 'ultra', rooms: [{ ...room, icon: 'unicorn' }] }),
+    ).toThrow(/graphics must be one of: full, lite\nrooms\[0\]\.icon "unicorn"/)
+  })
+
   it.each([
     [
       { rooms: [{ ...room, lights: ['switch.den'] }] },
@@ -72,7 +93,7 @@ describe('parseHomeConfig', () => {
     ],
     [{ rooms: [{ ...room, icon: 'unicorn' }] }, 'rooms[0].icon "unicorn" is not a known icon'],
     [{ rooms: [{ ...room, lights: [] }] }, 'rooms[0].lights needs at least one light'],
-    [{ rooms: [room, room] }, 'rooms has the id "den" twice'],
+    [{ rooms: [room, room] }, 'rooms[1].id "den" is used twice'],
     [
       {
         apps: [{ id: 'l', type: 'lights', name: 'L', groups: [{ name: 'G', lights: ['fan.x'] }] }],
@@ -86,7 +107,26 @@ describe('parseHomeConfig', () => {
       'apps[0] needs a top-level doorbell section',
     ],
     [{ apps: [{ id: 't', name: 'T', type: 'tv', entities: {} }] }, 'apps[0].entities.player'],
-    [{ colors: [{ name: 'Odd', rgb: [1, 2] }] }, 'colors[0] needs kelvin: 2700 or rgb: [r, g, b]'],
+    [{ colors: [{ name: 'Odd', rgb: [1, 2] }] }, 'colors[0].rgb must be [r, g, b]'],
+    [{ colors: [{ name: 'None' }] }, 'colors[0] needs kelvin: 2700 or rgb: [r, g, b]'],
+    [
+      { rooms: [{ ...room, scene: [] }] },
+      'rooms[0].scene is not a known key. Did you mean "scenes"?',
+    ],
+    [{ wallpapr: ['#000', '#fff'] }, 'wallpapr is not a known key. Did you mean "wallpaper"?'],
+    [{ rooms: [{ ...room, icon: 'sofaa' }] }, '"sofaa" is not a known icon. Did you mean "sofa"?'],
+    [{ apps: [{ id: 'v', name: 'V', type: 'vacum' }] }, 'Did you mean "vacuum"?'],
+    [
+      { rooms: [{ ...room, scenes: ['light.den'] }] },
+      'rooms[0].scenes[0] "light.den" must be a scene.* entity',
+    ],
+    [
+      { rooms: [{ ...room, scenes: [{ entity: 'scene.x', colour: [] }] }] },
+      'rooms[0].scenes[0].colour is not a known key. Did you mean "colors"?',
+    ],
+    [{ rooms: [{ id: 'den', lights: ['light.den'] }] }, 'rooms[0].name is required'],
+    [{ rooms: { den: {} } }, 'rooms must be a list'],
+    [{ timings: { screensaverSeconds: 'soon' } }, 'timings.screensaverSeconds must be a number'],
     [{ graphics: 'ultra' }, 'graphics must be one of: full, lite'],
   ])('points at the broken key in %j', (raw, message) => {
     expect(() => parseHomeConfig(raw)).toThrow(ConfigError)

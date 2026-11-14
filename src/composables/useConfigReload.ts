@@ -14,9 +14,9 @@ export function useConfigReload() {
 
   async function check() {
     try {
-      const source = await fetchConfigSource()
-      if (source === config.source) return
-      parseConfigSource(source)
+      const { text } = await fetchConfigSource()
+      if (text === config.source) return
+      parseConfigSource(text)
       window.location.reload()
     } catch (error) {
       console.error('[config] not reloading:', error)

@@ -27,15 +27,24 @@ export interface HaProxyOptions {
   fallbackConfigPath?: string
 }
 
-/** kiosk.yaml as text, or the fallback file when kiosk.yaml doesn't exist (yet). */
-export async function readConfigFile(configPath: string, fallbackPath?: string): Promise<string> {
+/**
+ * kiosk.yaml as text, or the fallback file (the example) when kiosk.yaml doesn't
+ * exist yet. `isExample` tells which one it was.
+ */
+export async function readConfig(
+  configPath: string,
+  fallbackPath?: string,
+): Promise<{ text: string; isExample: boolean }> {
   try {
-    return await readFile(configPath, 'utf8')
+    return { text: await readFile(configPath, 'utf8'), isExample: false }
   } catch (error) {
     if (!fallbackPath || (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-    return readFile(fallbackPath, 'utf8')
+    return { text: await readFile(fallbackPath, 'utf8'), isExample: true }
   }
 }
+
+/** Header that marks a /config/kiosk.yaml response as the example config. */
+export const EXAMPLE_HEADER = 'x-kiosk-config'
 
 type Message = Record<string, unknown> & { id?: number; type?: string }
 
@@ -112,7 +121,7 @@ export function createHaProxy({ haUrl, token, configPath, fallbackConfigPath }: 
 
   async function allowedEntities() {
     try {
-      return entityIdsIn(parse(await readConfigFile(configPath, fallbackConfigPath)))
+      return entityIdsIn(parse((await readConfig(configPath, fallbackConfigPath)).text))
     } catch (error) {
       console.error(`[ha-proxy] cannot read ${configPath}:`, error)
       return new Set<string>()

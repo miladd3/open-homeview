@@ -24,12 +24,13 @@ An Apple Home style wall dashboard for [Home Assistant](https://www.home-assista
 
 4. Open `http://<your server>:8080` on the wall screen, in kiosk mode (see [Wall screen](#wall-screen)).
 
-| Variable      | Default              | What it is                              |
-| ------------- | -------------------- | --------------------------------------- |
-| `HA_URL`      | (required)           | Your Home Assistant address             |
-| `HA_TOKEN`    | (required)           | Long-lived token of a non-admin HA user |
-| `PORT`        | `8080`               | Port inside the container               |
-| `CONFIG_PATH` | `/config/kiosk.yaml` | Where the container reads your config   |
+| Variable          | Default              | What it is                                                                                         |
+| ----------------- | -------------------- | -------------------------------------------------------------------------------------------------- |
+| `HA_URL`          | (required)           | Your Home Assistant address                                                                        |
+| `HA_TOKEN`        | (required)           | Long-lived token of a non-admin HA user                                                            |
+| `PORT`            | `8080`               | Port inside the container                                                                          |
+| `CONFIG_PATH`     | `/config/kiosk.yaml` | Where the container reads your config                                                              |
+| `SCHEMA_ENTITIES` | `false`              | Suggest your HA entity IDs in the editor schema (see [Autocomplete](#autocomplete-in-your-editor)) |
 
 Images are built for `amd64` and `arm64`. Tags: `latest` (main branch), and `x.y.z` / `x.y` for releases.
 
@@ -56,12 +57,28 @@ Tapping the **icon** on a room tile toggles that room's lights without opening t
 
 Rooms, scenes, apps, weather, doorbell, color swatches, wallpaper and timings all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
 
-- In Docker it is mounted at `/config/kiosk.yaml`. Until it exists, the kiosk shows the example.
+- In Docker it is mounted at `/config/kiosk.yaml`. Until it exists, the kiosk shows the example, with a **kiosk.yaml** chip on the Home screen explaining what to do.
 - The kiosk checks it every minute and **reloads itself when it changes**, so you never have to touch the screen. Edit the file and the wall screen updates within a minute.
-- A broken edit is never applied: a running kiosk keeps its last good config (the error is in the browser console), and a fresh start shows an error screen naming the bad key (e.g. `rooms[1].lights[0] "switch.x" must be a light.* entity`).
+- A broken edit is never applied: a running kiosk keeps its last good config (the error is in the browser console), and a fresh start shows an error screen naming every bad key, with a suggestion for typos (e.g. `rooms[0].scene is not a known key. Did you mean "scenes"?`).
+- Entity IDs that Home Assistant doesn't know show up in the **kiosk.yaml** chip on the Home screen, instead of silently showing "Unavailable".
+- A scene can be written as just its entity ID: `scenes: [scene.bedroom_read]`. Add `name:` and `colors:` only when you want them.
 - Icons are referenced by name from [`src/config/icons.ts`](src/config/icons.ts). Add a Lucide icon there to make it available.
 - App types: `vacuum`, `tv`, `switch` (any on/off entity plus optional sensors), `lights` and `doorbell`.
 - The `lights` app lists `groups`, each with a `name`, an optional `icon` and its `lights`. Groups can be anything (rooms, floors, lamps vs. spots). Leave `groups` out to get one group per room. Room tiles usually point at a whole-room light (e.g. a Hue room), while the Lights app lists the single bulbs.
+
+### Autocomplete in your editor
+
+The container serves a JSON Schema for `kiosk.yaml`. Add this line at the top of the file:
+
+```yaml
+# yaml-language-server: $schema=http://<your server>:8080/kiosk.schema.json
+```
+
+Editors with the YAML language server (VS Code with the Red Hat YAML extension, or Home Assistant's Studio Code Server add-on) then autocomplete keys, app types and icon names, show what each key does, and underline mistakes while you type.
+
+**Your own entity IDs as suggestions:** start the container with `SCHEMA_ENTITIES=true` and the schema also suggests your Home Assistant entities on every entity field (only `light.*` under `lights:`, only `scene.*` under `scenes:`, and so on). It's off by default because anyone on your network can then read the list of your entity names.
+
+Without a running kiosk, use the schema from GitHub: `https://raw.githubusercontent.com/miladd3/open-homeview/main/kiosk.schema.json`. It is generated from the same code that checks the file (`npm run schema`), so the two always agree.
 
 ## Home Assistant connection
 

@@ -13,6 +13,7 @@ const {
   PORT = '8080',
   CONFIG_PATH = '/config/kiosk.yaml',
   DIST_DIR = fileURLToPath(new URL('../dist', import.meta.url)),
+  SCHEMA_ENTITIES = 'false',
 } = process.env
 const EXAMPLE_CONFIG = fileURLToPath(new URL('../kiosk.example.yaml', import.meta.url))
 
@@ -37,6 +38,8 @@ const app = createApp({
   configPath: CONFIG_PATH,
   fallbackConfigPath: EXAMPLE_CONFIG,
   distDir: DIST_DIR,
+  schemaPath: fileURLToPath(new URL('../kiosk.schema.json', import.meta.url)),
+  schemaEntities: SCHEMA_ENTITIES === 'true',
 })
 
 const server = createServer((req, res) => void app.handleRequest(req, res))

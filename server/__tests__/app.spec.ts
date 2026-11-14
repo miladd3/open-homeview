@@ -19,6 +19,7 @@ async function start(configPath: string) {
     configPath,
     fallbackConfigPath: join(dir, 'example.yaml'),
     distDir: join(dir, 'dist'),
+    schemaPath: join(dir, 'schema.json'),
   })
   server = createServer((req, res) => void app.handleRequest(req, res))
   await new Promise<void>((resolve) => server.listen(0, resolve))
@@ -33,6 +34,7 @@ beforeEach(async () => {
   await writeFile(join(dir, 'secret.txt'), 'outside dist')
   await writeFile(join(dir, 'example.yaml'), 'rooms: [] # example')
   await writeFile(join(dir, 'kiosk.yaml'), 'rooms: [] # mine')
+  await writeFile(join(dir, 'schema.json'), '{"title":"kiosk"}')
 })
 
 afterEach(() => server?.close())
@@ -55,10 +57,18 @@ describe('server', () => {
     const config = await fetch(`${base}/config/kiosk.yaml`)
     expect(await config.text()).toBe('rooms: [] # mine')
     expect(config.headers.get('cache-control')).toBe('no-store')
+    expect(config.headers.get('x-kiosk-config')).toBeNull()
     server.close()
 
     await start(join(dir, 'missing.yaml'))
-    expect(await (await fetch(`${base}/config/kiosk.yaml`)).text()).toBe('rooms: [] # example')
+    const example = await fetch(`${base}/config/kiosk.yaml`)
+    expect(await example.text()).toBe('rooms: [] # example')
+    expect(example.headers.get('x-kiosk-config')).toBe('example')
+  })
+
+  it('serves the editor schema', async () => {
+    await start(join(dir, 'kiosk.yaml'))
+    expect(await (await fetch(`${base}/kiosk.schema.json`)).json()).toEqual({ title: 'kiosk' })
   })
 
   it('never serves files outside dist or leaks the token', async () => {

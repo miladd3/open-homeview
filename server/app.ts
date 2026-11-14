@@ -7,7 +7,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import type { Duplex } from 'node:stream'
 
-import { createHaProxy, readConfigFile } from './haProxy.ts'
+import { createHaProxy, EXAMPLE_HEADER, readConfig } from './haProxy.ts'
+import { createSchemaHandler } from './schema.ts'
 
 export interface AppOptions {
   haUrl: string
@@ -18,6 +19,10 @@ export interface AppOptions {
   fallbackConfigPath?: string
   /** The built page (`dist/`). */
   distDir: string
+  /** kiosk.schema.json, served at /kiosk.schema.json for editor autocomplete. */
+  schemaPath?: string
+  /** Suggest this home's entity IDs in the served schema (SCHEMA_ENTITIES). */
+  schemaEntities?: boolean
 }
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -33,8 +38,18 @@ const CONTENT_TYPES: Record<string, string> = {
   '.webp': 'image/webp',
 }
 
-export function createApp({ haUrl, token, configPath, fallbackConfigPath, distDir }: AppOptions) {
+export function createApp({
+  haUrl,
+  token,
+  configPath,
+  fallbackConfigPath,
+  distDir,
+  schemaPath,
+  schemaEntities = false,
+}: AppOptions) {
   const proxy = createHaProxy({ haUrl, token, configPath, fallbackConfigPath })
+  const schema =
+    schemaPath && createSchemaHandler({ schemaPath, withEntities: schemaEntities, haUrl, token })
   const root = normalize(distDir + sep)
 
   async function sendFile(res: ServerResponse, file: string, cacheControl: string) {
@@ -48,11 +63,13 @@ export function createApp({ haUrl, token, configPath, fallbackConfigPath, distDi
 
   async function serveConfig(res: ServerResponse) {
     try {
-      const text = await readConfigFile(configPath, fallbackConfigPath)
+      const { text, isExample } = await readConfig(configPath, fallbackConfigPath)
       // Polled for changes by the kiosk: never cache it.
       res.writeHead(200, {
         'content-type': 'text/yaml; charset=utf-8',
         'cache-control': 'no-store',
+        // The kiosk shows a "this is the example" banner.
+        ...(isExample && { [EXAMPLE_HEADER]: 'example' }),
       })
       res.end(text)
     } catch (error) {
@@ -83,6 +100,11 @@ export function createApp({ haUrl, token, configPath, fallbackConfigPath, distDi
       if (pathname.startsWith('/api/')) return await proxy.handleRequest(req, res)
       if (req.method !== 'GET' && req.method !== 'HEAD') return void res.writeHead(405).end()
       if (pathname === '/config/kiosk.yaml') return await serveConfig(res)
+      if (pathname === '/kiosk.schema.json' && schema) {
+        const body = await schema()
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-cache' })
+        return void res.end(body)
+      }
       return await serveStatic(res, pathname)
     } catch (error) {
       console.error(`[server] ${req.method} ${pathname} failed:`, (error as Error).message)

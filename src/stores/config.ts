@@ -9,10 +9,13 @@ export const useConfigStore = defineStore('config', () => {
   const home = shallowRef<HomeConfig>(parseHomeConfig({}))
   /** Raw YAML the current config came from, to detect edits. */
   const source = ref('')
+  /** Showing the example config because there is no kiosk.yaml yet. */
+  const isExample = ref(false)
 
   async function load() {
-    const text = await fetchConfigSource()
-    set(parseConfigSource(text), text)
+    const fetched = await fetchConfigSource()
+    set(parseConfigSource(fetched.text), fetched.text)
+    isExample.value = fetched.isExample
   }
 
   function set(config: HomeConfig, text = '') {
@@ -20,5 +23,5 @@ export const useConfigStore = defineStore('config', () => {
     source.value = text
   }
 
-  return { home, source, load, set }
+  return { home, source, isExample, load, set }
 })

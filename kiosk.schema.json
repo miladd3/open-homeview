@@ -1,0 +1,1053 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "wallpaper": {
+      "default": [
+        "#2a2f6b",
+        "#7a3d5c"
+      ],
+      "description": "Background colors.",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "Any CSS color, e.g. \"#ff9f0a\"."
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "Any CSS color, e.g. \"#ff9f0a\"."
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "graphics": {
+      "default": "full",
+      "description": "lite: no live blur or shadows, for weak GPUs like a Raspberry Pi.",
+      "type": "string",
+      "enum": [
+        "full",
+        "lite"
+      ]
+    },
+    "weather": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^weather\\.[a-z0-9_]+$",
+          "x-entity-domain": "weather",
+          "description": "A weather.* entity ID from Home Assistant."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "rooms": {
+      "description": "Room tiles on the Home screen.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Unique ID, e.g. living-room."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "icon": {
+                "default": "house",
+                "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                "type": "string",
+                "enum": [
+                  "armchair",
+                  "baby",
+                  "bath",
+                  "bed",
+                  "bed-single",
+                  "bell",
+                  "book",
+                  "bot",
+                  "briefcase",
+                  "car",
+                  "cctv",
+                  "coffee",
+                  "cooking-pot",
+                  "door",
+                  "dumbbell",
+                  "fan",
+                  "flower",
+                  "gamepad",
+                  "house",
+                  "lamp",
+                  "lamp-desk",
+                  "laptop",
+                  "lightbulb",
+                  "monitor",
+                  "music",
+                  "plug",
+                  "shield",
+                  "shield-check",
+                  "shower",
+                  "sofa",
+                  "speaker",
+                  "thermometer",
+                  "trees",
+                  "tv",
+                  "utensils",
+                  "washing-machine"
+                ]
+              },
+              "lights": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^light\\.[a-z0-9_]+$",
+                  "x-entity-domain": "light",
+                  "description": "A light.* entity ID from Home Assistant."
+                },
+                "description": "The lights this room tile switches. A whole-room group light works best."
+              },
+              "scenes": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^scene\\.[a-z0-9_]+$",
+                          "x-entity-domain": "scene",
+                          "description": "A scene. Shorthand for { entity: scene.x }."
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "entity": {
+                              "type": "string",
+                              "pattern": "^scene\\.[a-z0-9_]+$",
+                              "x-entity-domain": "scene",
+                              "description": "A scene.* entity ID from Home Assistant."
+                            },
+                            "name": {
+                              "description": "Defaults to the scene's name in Home Assistant.",
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "colors": {
+                              "default": [
+                                "#ffd27a",
+                                "#ff9f0a"
+                              ],
+                              "description": "Two colors for a gradient: [from, to].",
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                                },
+                                {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                                }
+                              ],
+                              "items": false,
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          },
+                          "required": [
+                            "entity"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "lights"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "apps": {
+      "description": "App icons on the Home screen.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "house",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "vacuum",
+                    "description": "A robot vacuum."
+                  },
+                  "entities": {
+                    "type": "object",
+                    "properties": {
+                      "vacuum": {
+                        "type": "string",
+                        "pattern": "^vacuum\\.[a-z0-9_]+$",
+                        "x-entity-domain": "vacuum",
+                        "description": "A vacuum.* entity ID from Home Assistant."
+                      },
+                      "fullClean": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                            "x-entity-domain": "*",
+                            "description": "Button that starts a full clean (vacuum + mop)."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fullVacuum": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                            "x-entity-domain": "*",
+                            "description": "Button that starts a full vacuum."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "progress": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^sensor\\.[a-z0-9_]+$",
+                            "x-entity-domain": "sensor",
+                            "description": "Cleaning progress in %."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "status": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^sensor\\.[a-z0-9_]+$",
+                            "x-entity-domain": "sensor",
+                            "description": "Detailed status text."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "battery": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^sensor\\.[a-z0-9_]+$",
+                            "x-entity-domain": "sensor",
+                            "description": "Battery level in %."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "vacuum"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "entities"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "house",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "tv",
+                    "description": "A TV remote."
+                  },
+                  "entities": {
+                    "type": "object",
+                    "properties": {
+                      "player": {
+                        "type": "string",
+                        "pattern": "^media_player\\.[a-z0-9_]+$",
+                        "x-entity-domain": "media_player",
+                        "description": "A media_player.* entity ID from Home Assistant."
+                      },
+                      "remote": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^remote\\.[a-z0-9_]+$",
+                            "x-entity-domain": "remote",
+                            "description": "A remote.* entity ID from Home Assistant."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "player"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "entities"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "house",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "switch",
+                    "description": "Any on/off entity, with optional sensors."
+                  },
+                  "entities": {
+                    "type": "object",
+                    "properties": {
+                      "switch": {
+                        "type": "string",
+                        "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                        "x-entity-domain": "*",
+                        "description": "Any on/off entity (switch, input_boolean, fan…)."
+                      },
+                      "sensors": {
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^sensor\\.[a-z0-9_]+$",
+                              "x-entity-domain": "sensor",
+                              "description": "A sensor.* entity ID from Home Assistant."
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "switch"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "entities"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "house",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "lights",
+                    "description": "Every light on its own, sorted into groups."
+                  },
+                  "groups": {
+                    "description": "Sections of the app. Leave out for one group per room.",
+                    "anyOf": [
+                      {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "icon": {
+                              "default": "lightbulb",
+                              "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                              "type": "string",
+                              "enum": [
+                                "armchair",
+                                "baby",
+                                "bath",
+                                "bed",
+                                "bed-single",
+                                "bell",
+                                "book",
+                                "bot",
+                                "briefcase",
+                                "car",
+                                "cctv",
+                                "coffee",
+                                "cooking-pot",
+                                "door",
+                                "dumbbell",
+                                "fan",
+                                "flower",
+                                "gamepad",
+                                "house",
+                                "lamp",
+                                "lamp-desk",
+                                "laptop",
+                                "lightbulb",
+                                "monitor",
+                                "music",
+                                "plug",
+                                "shield",
+                                "shield-check",
+                                "shower",
+                                "sofa",
+                                "speaker",
+                                "thermometer",
+                                "trees",
+                                "tv",
+                                "utensils",
+                                "washing-machine"
+                              ]
+                            },
+                            "lights": {
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^light\\.[a-z0-9_]+$",
+                                "x-entity-domain": "light",
+                                "description": "A light.* entity ID from Home Assistant."
+                              }
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "lights"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "house",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "doorbell",
+                    "description": "Opens the doorbell camera."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "doorbell": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "default": "Doorbell",
+              "type": "string",
+              "minLength": 1
+            },
+            "camera": {
+              "type": "string",
+              "pattern": "^camera\\.[a-z0-9_]+$",
+              "x-entity-domain": "camera",
+              "description": "A camera.* entity ID from Home Assistant."
+            },
+            "ring": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^event\\.[a-z0-9_]+$",
+                  "x-entity-domain": "event",
+                  "description": "Event entity that fires on a ring; opens the camera."
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "camera"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "colors": {
+      "description": "Color swatches for lights.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kelvin": {
+                "description": "A white, e.g. 2700.",
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "rgb": {
+                "description": "A color as [r, g, b], 0–255.",
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "timings": {
+      "default": {
+        "screensaverSeconds": 60,
+        "doorbellAutoCloseSeconds": 60,
+        "configCheckSeconds": 60
+      },
+      "type": "object",
+      "properties": {
+        "screensaverSeconds": {
+          "default": 60,
+          "description": "Idle time before the screensaver.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "doorbellAutoCloseSeconds": {
+          "default": 60,
+          "description": "The doorbell camera closes after this long.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "configCheckSeconds": {
+          "default": 60,
+          "description": "How often to check kiosk.yaml for changes.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "nightHours": {
+      "default": {
+        "from": 22,
+        "to": 7
+      },
+      "description": "Hours (local time) during which the screensaver is dimmed.",
+      "type": "object",
+      "properties": {
+        "from": {
+          "default": 22,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "to": {
+          "default": 7,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 24
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$id": "https://raw.githubusercontent.com/miladd3/open-homeview/main/kiosk.schema.json",
+  "title": "Open HomeView kiosk.yaml"
+}

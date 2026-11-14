@@ -1,10 +1,11 @@
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { createHaProxy, readConfigFile } from './server/haProxy.ts'
+import { createHaProxy, EXAMPLE_HEADER, readConfig } from './server/haProxy.ts'
 
 // Local config: ./kiosk.yaml (git-ignored), or the example until you create one.
 const CONFIG = fileURLToPath(new URL('./kiosk.yaml', import.meta.url))
@@ -17,13 +18,22 @@ function kioskConfig(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         if (!req.url?.startsWith('/config/kiosk.yaml')) return next()
-        readConfigFile(CONFIG, EXAMPLE_CONFIG).then(
-          (text) => {
-            res.writeHead(200, { 'content-type': 'text/yaml', 'cache-control': 'no-store' })
+        readConfig(CONFIG, EXAMPLE_CONFIG).then(
+          ({ text, isExample }) => {
+            res.writeHead(200, {
+              'content-type': 'text/yaml',
+              'cache-control': 'no-store',
+              ...(isExample && { [EXAMPLE_HEADER]: 'example' }),
+            })
             res.end(text)
           },
           () => res.writeHead(404).end(),
         )
+      })
+      // The editor schema, like the production server (without entity suggestions).
+      server.middlewares.use('/kiosk.schema.json', (_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(readFileSync(new URL('./kiosk.schema.json', import.meta.url)))
       })
       // Edits to kiosk.yaml are picked up by the kiosk's own polling.
       server.watcher.add([CONFIG, EXAMPLE_CONFIG])

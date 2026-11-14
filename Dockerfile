@@ -27,7 +27,7 @@ ENV NODE_ENV=production \
     PORT=8080 \
     CONFIG_PATH=/config/kiosk.yaml
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json kiosk.example.yaml ./
+COPY package.json kiosk.example.yaml kiosk.schema.json ./
 COPY server ./server
 COPY --from=build /app/dist ./dist
 
