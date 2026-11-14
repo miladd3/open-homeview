@@ -64,7 +64,7 @@ describe('events', () => {
           id: 'adguard',
           type: 'switch',
           name: 'AdGuard',
-          entities: { switch: 'switch.adguard' },
+          switch: 'switch.adguard',
         },
       ],
       events: [{ entity: 'binary_sensor.motion', to: 'on', open: 'adguard' }],

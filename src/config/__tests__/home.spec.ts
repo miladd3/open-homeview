@@ -4,7 +4,7 @@ import { testConfig } from '@/__tests__/testConfig'
 import { ConfigError, parseHomeConfig } from '../home'
 
 const room = { id: 'den', name: 'Den', lights: ['light.den'] }
-const camera = { id: 'door', name: 'Door', type: 'camera', entities: { camera: 'camera.door' } }
+const camera = { id: 'door', name: 'Door', type: 'camera', camera: 'camera.door' }
 
 describe('parseHomeConfig', () => {
   it('parses the shipped kiosk.yaml', () => {
@@ -106,6 +106,15 @@ describe('parseHomeConfig', () => {
     })
   })
 
+  it('reads app entity IDs from the app, and from an old `entities:` block', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const tv = { id: 'tv', name: 'TV', type: 'tv' }
+    const flat = parseHomeConfig({ apps: [{ ...tv, player: 'media_player.tv' }] })
+    const nested = parseHomeConfig({ apps: [{ ...tv, entities: { player: 'media_player.tv' } }] })
+    expect(flat.apps[0]).toMatchObject({ entities: { player: 'media_player.tv' } })
+    expect(nested.apps).toEqual(flat.apps)
+  })
+
   it('reads the old top-level doorbell as a camera app plus a ring event', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const config = parseHomeConfig({
@@ -155,7 +164,7 @@ describe('parseHomeConfig', () => {
     ],
     [{ apps: [{ id: 'l', type: 'lights', name: 'L' }] }, 'apps[0].groups needs at least one group'],
     [{ apps: [{ id: 'x', name: 'X', type: 'radio' }] }, 'apps[0].type must be one of'],
-    [{ apps: [{ ...camera, entities: {} }] }, 'apps[0].entities.camera is required'],
+    [{ apps: [{ ...camera, camera: undefined }] }, 'apps[0].camera is required'],
     [
       { apps: [camera], events: [{ entity: 'event.ring', open: 'dor' }] },
       'events[0].open "dor" is not an app ID. Did you mean "door"?',
@@ -175,7 +184,11 @@ describe('parseHomeConfig', () => {
       },
       'events[0].eventTypes is only for event.* entities',
     ],
-    [{ apps: [{ id: 't', name: 'T', type: 'tv', entities: {} }] }, 'apps[0].entities.player'],
+    [{ apps: [{ id: 't', name: 'T', type: 'tv' }] }, 'apps[0].player is required'],
+    [
+      { apps: [{ id: 't', name: 'T', type: 'tv', player: 'media_player.tv', remot: 'remote.tv' }] },
+      'apps[0].remot is not a known key. Did you mean "remote"?',
+    ],
     [{ colors: [{ name: 'Odd', rgb: [1, 2] }] }, 'colors[0].rgb must be [r, g, b]'],
     [{ colors: [{ name: 'None' }] }, 'colors[0] needs kelvin: 2700 or rgb: [r, g, b]'],
     [

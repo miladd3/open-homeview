@@ -291,35 +291,40 @@ const appBase = {
     .meta({ description: 'Leave it off the Home screen; it then only opens from an event.' }),
 }
 
+/**
+ * In kiosk.yaml an app's entity IDs sit right on the app (`camera: camera.door`);
+ * the kiosk reads them from `app.entities`.
+ */
+function withEntities<
+  Raw extends { id: string; name: string; icon: IconName; colors: Gradient; hidden: boolean },
+>(raw: Raw) {
+  const { id, name, icon, colors, hidden, ...entities } = raw
+  return { id, name, icon, colors, hidden, entities }
+}
+
 const app = z.discriminatedUnion('type', [
   object({
     ...appBase,
     type: z.literal('vacuum').meta({ description: 'A robot vacuum.' }),
-    entities: object({
-      vacuum: entity('vacuum'),
-      fullClean: optional(entity(undefined, 'Button that starts a full clean (vacuum + mop).')),
-      fullVacuum: optional(entity(undefined, 'Button that starts a full vacuum.')),
-      progress: optional(entity('sensor', 'Cleaning progress in %.')),
-      status: optional(entity('sensor', 'Detailed status text.')),
-      battery: optional(entity('sensor', 'Battery level in %.')),
-    }),
-  }),
+    vacuum: entity('vacuum'),
+    fullClean: optional(entity(undefined, 'Button that starts a full clean (vacuum + mop).')),
+    fullVacuum: optional(entity(undefined, 'Button that starts a full vacuum.')),
+    progress: optional(entity('sensor', 'Cleaning progress in %.')),
+    status: optional(entity('sensor', 'Detailed status text.')),
+    battery: optional(entity('sensor', 'Battery level in %.')),
+  }).transform(({ type, ...raw }) => ({ type, ...withEntities(raw) })),
   object({
     ...appBase,
     type: z.literal('tv').meta({ description: 'A TV remote.' }),
-    entities: object({
-      player: entity('media_player'),
-      remote: optional(entity('remote')),
-    }),
-  }),
+    player: entity('media_player'),
+    remote: optional(entity('remote')),
+  }).transform(({ type, ...raw }) => ({ type, ...withEntities(raw) })),
   object({
     ...appBase,
     type: z.literal('switch').meta({ description: 'Any on/off entity, with optional sensors.' }),
-    entities: object({
-      switch: entity(undefined, 'Any on/off entity (switch, input_boolean, fan…).'),
-      sensors: list(entity('sensor')),
-    }),
-  }),
+    switch: entity(undefined, 'Any on/off entity (switch, input_boolean, fan…).'),
+    sensors: list(entity('sensor')),
+  }).transform(({ type, ...raw }) => ({ type, ...withEntities(raw) })),
   object({
     ...appBase,
     type: z.literal('lights').meta({ description: 'Every light on its own, sorted into groups.' }),
@@ -330,10 +335,11 @@ const app = z.discriminatedUnion('type', [
   object({
     ...appBase,
     type: z.literal('camera').meta({ description: 'A live camera, full screen.' }),
-    entities: object({ camera: entity('camera') }),
+    camera: entity('camera'),
     autoCloseSeconds: seconds(60, 'Closes after this long without a touch.'),
-  }).transform(({ autoCloseSeconds, ...app }) => ({
-    ...app,
+  }).transform(({ type, autoCloseSeconds, ...raw }) => ({
+    type,
+    ...withEntities(raw),
     autoCloseMs: autoCloseSeconds * 1000,
   })),
 ])
@@ -543,31 +549,33 @@ type Raw = Record<string, unknown>
 const isMapping = (value: unknown): value is Raw =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+/** Old configs nested an app's entity IDs under `entities:`. Moves them onto the app. */
+function flattenAppEntities(app: unknown): unknown {
+  if (!isMapping(app) || !isMapping(app.entities)) return app
+  const { entities, ...rest } = app
+  return { ...rest, ...entities }
+}
+
 /**
  * Old configs had a top-level `doorbell:` (camera + ring) and a `type: doorbell`
- * app. Rewrites them to a camera app plus an event, so they keep working.
- * TODO: drop once old configs are gone.
+ * app. Rewrites them to a camera app plus an event.
  */
-export function migrateLegacyConfig(value: unknown): unknown {
-  if (!isMapping(value)) return value
-  const { doorbell, ...config } = value
-  const timings = isMapping(config.timings) ? { ...config.timings } : undefined
+function migrateDoorbell(config: Raw): Raw {
+  const { doorbell, ...rest } = config
+  const timings = isMapping(rest.timings) ? { ...rest.timings } : undefined
   const autoCloseSeconds = timings?.doorbellAutoCloseSeconds
   if (timings) delete timings.doorbellAutoCloseSeconds
-  const apps = Array.isArray(config.apps) ? config.apps : []
+  const apps = Array.isArray(rest.apps) ? rest.apps : []
   const hasLegacyApp = apps.some((app) => isMapping(app) && app.type === 'doorbell')
-  if (!isMapping(doorbell) && !hasLegacyApp && autoCloseSeconds === undefined) return value
+  if (!isMapping(doorbell) && !hasLegacyApp && autoCloseSeconds === undefined) return config
 
-  console.warn(
-    '[config] `doorbell:` is now a `type: camera` app plus an `events:` entry. See kiosk.example.yaml.',
-  )
   const legacy = isMapping(doorbell) ? doorbell : {}
   const camera = (app: Raw = { id: 'doorbell', hidden: true }) => ({
     name: legacy.name ?? 'Doorbell',
     icon: 'cctv',
     ...app,
     type: 'camera',
-    entities: { camera: legacy.camera },
+    camera: legacy.camera,
     ...(autoCloseSeconds !== undefined && { autoCloseSeconds }),
   })
   const migratedApps = hasLegacyApp
@@ -577,7 +585,7 @@ export function migrateLegacyConfig(value: unknown): unknown {
       : apps
   const cameraId = (migratedApps.find((app) => isMapping(app) && app.type === 'camera') as Raw)?.id
   const events = [
-    ...(Array.isArray(config.events) ? config.events : []),
+    ...(Array.isArray(rest.events) ? rest.events : []),
     ...(legacy.ring && cameraId
       ? [
           {
@@ -590,11 +598,27 @@ export function migrateLegacyConfig(value: unknown): unknown {
       : []),
   ]
   return {
-    ...config,
+    ...rest,
     apps: migratedApps,
     ...(events.length && { events }),
     ...(timings && { timings }),
   }
+}
+
+/**
+ * Rewrites older kiosk.yaml layouts to the current one, so they keep working:
+ * `entities:` under apps, and the top-level `doorbell:`.
+ * TODO: drop once old configs are gone.
+ */
+export function migrateLegacyConfig(value: unknown): unknown {
+  if (!isMapping(value)) return value
+  const apps = Array.isArray(value.apps) ? value.apps.map(flattenAppEntities) : value.apps
+  const migrated = migrateDoorbell({ ...value, ...(apps !== undefined && { apps }) })
+  if (JSON.stringify(migrated) !== JSON.stringify(value))
+    console.warn(
+      '[config] kiosk.yaml uses an old layout (`entities:` under apps or a top-level `doorbell:`). It still works; see kiosk.example.yaml for the new one.',
+    )
+  return migrated
 }
 
 /** Validates the parsed YAML and fills in defaults. Throws `ConfigError` naming the bad keys. */

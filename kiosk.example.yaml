@@ -124,39 +124,35 @@ apps:
     name: Vacuum
     icon: bot
     colors: ['#34c759', '#1f8a3b']
-    entities:
-      vacuum: vacuum.robot_vacuum
-      fullClean: button.robot_vacuum_full_cleaning
-      fullVacuum: button.robot_vacuum_full_vacuum
-      progress: sensor.robot_vacuum_cleaning_progress
-      status: sensor.robot_vacuum_status
-      battery: sensor.robot_vacuum_battery
+    vacuum: vacuum.robot_vacuum
+    fullClean: button.robot_vacuum_full_cleaning
+    fullVacuum: button.robot_vacuum_full_vacuum
+    progress: sensor.robot_vacuum_cleaning_progress
+    status: sensor.robot_vacuum_status
+    battery: sensor.robot_vacuum_battery
 
   - id: tv
     type: tv
     name: TV
     icon: tv
     colors: ['#5e5ce6', '#3634a3']
-    entities:
-      player: media_player.living_room_tv
-      remote: remote.living_room_tv
+    player: media_player.living_room_tv
+    remote: remote.living_room_tv
 
   - id: adguard
     type: switch
     name: AdGuard
     icon: shield-check
     colors: ['#30b0c7', '#0a7285']
-    entities:
-      switch: switch.adguard_home_protection
-      sensors: [sensor.adguard_home_average_processing_speed]
+    switch: switch.adguard_home_protection
+    sensors: [sensor.adguard_home_average_processing_speed]
 
   - id: front-door
     type: camera
     name: Front Door
     icon: cctv
     colors: ['#ff9f0a', '#d9520b']
-    entities:
-      camera: camera.front_door
+    camera: camera.front_door
     # Closes after this long without a touch.
     autoCloseSeconds: 60
 

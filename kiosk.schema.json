@@ -297,92 +297,83 @@
                     "const": "vacuum",
                     "description": "A robot vacuum."
                   },
-                  "entities": {
-                    "type": "object",
-                    "properties": {
-                      "vacuum": {
+                  "vacuum": {
+                    "type": "string",
+                    "pattern": "^vacuum\\.[a-z0-9_]+$",
+                    "x-entity-domain": "vacuum",
+                    "description": "A vacuum.* entity ID from Home Assistant."
+                  },
+                  "fullClean": {
+                    "anyOf": [
+                      {
                         "type": "string",
-                        "pattern": "^vacuum\\.[a-z0-9_]+$",
-                        "x-entity-domain": "vacuum",
-                        "description": "A vacuum.* entity ID from Home Assistant."
+                        "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                        "x-entity-domain": "*",
+                        "description": "Button that starts a full clean (vacuum + mop)."
                       },
-                      "fullClean": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
-                            "x-entity-domain": "*",
-                            "description": "Button that starts a full clean (vacuum + mop)."
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "fullVacuum": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
-                            "x-entity-domain": "*",
-                            "description": "Button that starts a full vacuum."
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "progress": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "pattern": "^sensor\\.[a-z0-9_]+$",
-                            "x-entity-domain": "sensor",
-                            "description": "Cleaning progress in %."
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "status": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "pattern": "^sensor\\.[a-z0-9_]+$",
-                            "x-entity-domain": "sensor",
-                            "description": "Detailed status text."
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "battery": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "pattern": "^sensor\\.[a-z0-9_]+$",
-                            "x-entity-domain": "sensor",
-                            "description": "Battery level in %."
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
+                      {
+                        "type": "null"
                       }
-                    },
-                    "required": [
-                      "vacuum"
-                    ],
-                    "additionalProperties": false
+                    ]
+                  },
+                  "fullVacuum": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                        "x-entity-domain": "*",
+                        "description": "Button that starts a full vacuum."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "progress": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sensor\\.[a-z0-9_]+$",
+                        "x-entity-domain": "sensor",
+                        "description": "Cleaning progress in %."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sensor\\.[a-z0-9_]+$",
+                        "x-entity-domain": "sensor",
+                        "description": "Detailed status text."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "battery": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sensor\\.[a-z0-9_]+$",
+                        "x-entity-domain": "sensor",
+                        "description": "Battery level in %."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": [
                   "id",
                   "name",
                   "type",
-                  "entities"
+                  "vacuum"
                 ],
                 "additionalProperties": false
               },
@@ -474,40 +465,31 @@
                     "const": "tv",
                     "description": "A TV remote."
                   },
-                  "entities": {
-                    "type": "object",
-                    "properties": {
-                      "player": {
+                  "player": {
+                    "type": "string",
+                    "pattern": "^media_player\\.[a-z0-9_]+$",
+                    "x-entity-domain": "media_player",
+                    "description": "A media_player.* entity ID from Home Assistant."
+                  },
+                  "remote": {
+                    "anyOf": [
+                      {
                         "type": "string",
-                        "pattern": "^media_player\\.[a-z0-9_]+$",
-                        "x-entity-domain": "media_player",
-                        "description": "A media_player.* entity ID from Home Assistant."
+                        "pattern": "^remote\\.[a-z0-9_]+$",
+                        "x-entity-domain": "remote",
+                        "description": "A remote.* entity ID from Home Assistant."
                       },
-                      "remote": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "pattern": "^remote\\.[a-z0-9_]+$",
-                            "x-entity-domain": "remote",
-                            "description": "A remote.* entity ID from Home Assistant."
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
+                      {
+                        "type": "null"
                       }
-                    },
-                    "required": [
-                      "player"
-                    ],
-                    "additionalProperties": false
+                    ]
                   }
                 },
                 "required": [
                   "id",
                   "name",
                   "type",
-                  "entities"
+                  "player"
                 ],
                 "additionalProperties": false
               },
@@ -599,43 +581,34 @@
                     "const": "switch",
                     "description": "Any on/off entity, with optional sensors."
                   },
-                  "entities": {
-                    "type": "object",
-                    "properties": {
-                      "switch": {
-                        "type": "string",
-                        "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
-                        "x-entity-domain": "*",
-                        "description": "Any on/off entity (switch, input_boolean, fan…)."
+                  "switch": {
+                    "type": "string",
+                    "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                    "x-entity-domain": "*",
+                    "description": "Any on/off entity (switch, input_boolean, fan…)."
+                  },
+                  "sensors": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^sensor\\.[a-z0-9_]+$",
+                          "x-entity-domain": "sensor",
+                          "description": "A sensor.* entity ID from Home Assistant."
+                        }
                       },
-                      "sensors": {
-                        "anyOf": [
-                          {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "pattern": "^sensor\\.[a-z0-9_]+$",
-                              "x-entity-domain": "sensor",
-                              "description": "A sensor.* entity ID from Home Assistant."
-                            }
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
+                      {
+                        "type": "null"
                       }
-                    },
-                    "required": [
-                      "switch"
-                    ],
-                    "additionalProperties": false
+                    ]
                   }
                 },
                 "required": [
                   "id",
                   "name",
                   "type",
-                  "entities"
+                  "switch"
                 ],
                 "additionalProperties": false
               },
@@ -902,20 +875,11 @@
                     "const": "camera",
                     "description": "A live camera, full screen."
                   },
-                  "entities": {
-                    "type": "object",
-                    "properties": {
-                      "camera": {
-                        "type": "string",
-                        "pattern": "^camera\\.[a-z0-9_]+$",
-                        "x-entity-domain": "camera",
-                        "description": "A camera.* entity ID from Home Assistant."
-                      }
-                    },
-                    "required": [
-                      "camera"
-                    ],
-                    "additionalProperties": false
+                  "camera": {
+                    "type": "string",
+                    "pattern": "^camera\\.[a-z0-9_]+$",
+                    "x-entity-domain": "camera",
+                    "description": "A camera.* entity ID from Home Assistant."
                   },
                   "autoCloseSeconds": {
                     "default": 60,
@@ -928,7 +892,7 @@
                   "id",
                   "name",
                   "type",
-                  "entities"
+                  "camera"
                 ],
                 "additionalProperties": false
               }
