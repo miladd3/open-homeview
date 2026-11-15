@@ -66,7 +66,6 @@ Rooms, scenes, apps, events, weather, color swatches, wallpaper and timings all 
 - App types: `vacuum`, `tv`, `switch` (any on/off entity plus optional sensors), `lights` and `camera`. Add `hidden: true` to keep an app off the Home screen, so it only opens from an event.
 - `events` open an app on their own, over everything (and out of the screensaver). Each names an `entity` and the app to `open`. An `event.*` entity (a doorbell ring, a button press) fires every time it changes, optionally only for some `eventTypes`. Any other entity fires when it changes `to` a state, e.g. `binary_sensor.driveway_motion` with `to: 'on'`. A `message` shows on the camera view (e.g. "Someone is at the door").
 - An app's entity IDs go right on the app (`camera: camera.front_door`, `player: media_player.tv`).
-- Older layouts still work: `entities:` blocks under apps, and the top-level `doorbell:` section (read as a camera app plus a ring event). Move to the new layout when you can.
 - The `lights` app lists `groups`, each with a `name`, an optional `icon` and its `lights`. Groups can be anything (rooms, floors, lamps vs. spots). Leave `groups` out to get one group per room. Room tiles usually point at a whole-room light (e.g. a Hue room), while the Lights app lists the single bulbs.
 
 ### Autocomplete in your editor

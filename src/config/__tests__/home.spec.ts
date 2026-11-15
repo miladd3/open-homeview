@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { testConfig } from '@/__tests__/testConfig'
 import { ConfigError, parseHomeConfig } from '../home'
@@ -106,40 +106,11 @@ describe('parseHomeConfig', () => {
     })
   })
 
-  it('reads app entity IDs from the app, and from an old `entities:` block', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const tv = { id: 'tv', name: 'TV', type: 'tv' }
-    const flat = parseHomeConfig({ apps: [{ ...tv, player: 'media_player.tv' }] })
-    const nested = parseHomeConfig({ apps: [{ ...tv, entities: { player: 'media_player.tv' } }] })
-    expect(flat.apps[0]).toMatchObject({ entities: { player: 'media_player.tv' } })
-    expect(nested.apps).toEqual(flat.apps)
-  })
-
-  it('reads the old top-level doorbell as a camera app plus a ring event', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  it('gathers app entity IDs into app.entities', () => {
     const config = parseHomeConfig({
-      apps: [{ id: 'bell', type: 'doorbell', name: 'Bell', icon: 'cctv' }],
-      doorbell: { name: 'Front Door', camera: 'camera.door', ring: 'event.door_ring' },
-      timings: { doorbellAutoCloseSeconds: 20 },
+      apps: [{ id: 'tv', name: 'TV', type: 'tv', player: 'media_player.tv' }],
     })
-    expect(config.apps[0]).toMatchObject({
-      id: 'bell',
-      type: 'camera',
-      name: 'Bell',
-      hidden: false,
-      entities: { camera: 'camera.door' },
-      autoCloseMs: 20_000,
-    })
-    expect(config.events).toMatchObject([
-      { entityId: 'event.door_ring', appId: 'bell', eventTypes: ['ring'] },
-    ])
-
-    // Without a doorbell app, the camera is added hidden so the ring still opens it.
-    const ringOnly = parseHomeConfig({ doorbell: { camera: 'camera.door', ring: 'event.r' } })
-    expect(ringOnly.apps).toMatchObject([
-      { id: 'doorbell', type: 'camera', name: 'Doorbell', hidden: true },
-    ])
-    expect(ringOnly.events).toMatchObject([{ entityId: 'event.r', appId: 'doorbell' }])
+    expect(config.apps[0]).toMatchObject({ entities: { player: 'media_player.tv' } })
   })
 
   it('lists every problem, not just the first', () => {
@@ -185,6 +156,11 @@ describe('parseHomeConfig', () => {
       'events[0].eventTypes is only for event.* entities',
     ],
     [{ apps: [{ id: 't', name: 'T', type: 'tv' }] }, 'apps[0].player is required'],
+    [
+      { apps: [{ id: 't', name: 'T', type: 'tv', entities: { player: 'media_player.tv' } }] },
+      'apps[0].entities is not a known key',
+    ],
+    [{ doorbell: { camera: 'camera.door' } }, 'doorbell is not a known key'],
     [
       { apps: [{ id: 't', name: 'T', type: 'tv', player: 'media_player.tv', remot: 'remote.tv' }] },
       'apps[0].remot is not a known key. Did you mean "remote"?',

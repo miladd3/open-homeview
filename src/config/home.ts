@@ -545,85 +545,9 @@ export function configProblems(error: z.ZodError): string[] {
   return error.issues.flatMap((issue) => issueText(issue))
 }
 
-type Raw = Record<string, unknown>
-const isMapping = (value: unknown): value is Raw =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-
-/** Old configs nested an app's entity IDs under `entities:`. Moves them onto the app. */
-function flattenAppEntities(app: unknown): unknown {
-  if (!isMapping(app) || !isMapping(app.entities)) return app
-  const { entities, ...rest } = app
-  return { ...rest, ...entities }
-}
-
-/**
- * Old configs had a top-level `doorbell:` (camera + ring) and a `type: doorbell`
- * app. Rewrites them to a camera app plus an event.
- */
-function migrateDoorbell(config: Raw): Raw {
-  const { doorbell, ...rest } = config
-  const timings = isMapping(rest.timings) ? { ...rest.timings } : undefined
-  const autoCloseSeconds = timings?.doorbellAutoCloseSeconds
-  if (timings) delete timings.doorbellAutoCloseSeconds
-  const apps = Array.isArray(rest.apps) ? rest.apps : []
-  const hasLegacyApp = apps.some((app) => isMapping(app) && app.type === 'doorbell')
-  if (!isMapping(doorbell) && !hasLegacyApp && autoCloseSeconds === undefined) return config
-
-  const legacy = isMapping(doorbell) ? doorbell : {}
-  const camera = (app: Raw = { id: 'doorbell', hidden: true }) => ({
-    name: legacy.name ?? 'Doorbell',
-    icon: 'cctv',
-    ...app,
-    type: 'camera',
-    camera: legacy.camera,
-    ...(autoCloseSeconds !== undefined && { autoCloseSeconds }),
-  })
-  const migratedApps = hasLegacyApp
-    ? apps.map((app) => (isMapping(app) && app.type === 'doorbell' ? camera(app) : app))
-    : isMapping(doorbell)
-      ? [...apps, camera()]
-      : apps
-  const cameraId = (migratedApps.find((app) => isMapping(app) && app.type === 'camera') as Raw)?.id
-  const events = [
-    ...(Array.isArray(rest.events) ? rest.events : []),
-    ...(legacy.ring && cameraId
-      ? [
-          {
-            entity: legacy.ring,
-            open: cameraId,
-            eventTypes: ['ring'],
-            message: 'Someone is at the door',
-          },
-        ]
-      : []),
-  ]
-  return {
-    ...rest,
-    apps: migratedApps,
-    ...(events.length && { events }),
-    ...(timings && { timings }),
-  }
-}
-
-/**
- * Rewrites older kiosk.yaml layouts to the current one, so they keep working:
- * `entities:` under apps, and the top-level `doorbell:`.
- * TODO: drop once old configs are gone.
- */
-export function migrateLegacyConfig(value: unknown): unknown {
-  if (!isMapping(value)) return value
-  const apps = Array.isArray(value.apps) ? value.apps.map(flattenAppEntities) : value.apps
-  const migrated = migrateDoorbell({ ...value, ...(apps !== undefined && { apps }) })
-  if (JSON.stringify(migrated) !== JSON.stringify(value))
-    console.warn(
-      '[config] kiosk.yaml uses an old layout (`entities:` under apps or a top-level `doorbell:`). It still works; see kiosk.example.yaml for the new one.',
-    )
-  return migrated
-}
-
 /** Validates the parsed YAML and fills in defaults. Throws `ConfigError` naming the bad keys. */
 export function parseHomeConfig(value: unknown): HomeConfig {
-  const result = kioskYamlSchema.safeParse(migrateLegacyConfig(value ?? {}), { reportInput: true })
+  const result = kioskYamlSchema.safeParse(value ?? {}, { reportInput: true })
   if (result.success) return result.data
   const problems = configProblems(result.error)
   throw new ConfigError(problems.slice(0, 5).join('\n'))
