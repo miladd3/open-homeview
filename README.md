@@ -124,19 +124,33 @@ Without `HA_URL`/`HA_TOKEN` in `.env.local`, `npm run dev` runs against an in-me
 kiosk.example.yaml        # example config: copy to kiosk.yaml
 server/                   # Node server (runs .ts directly): serves the page + kiosk.yaml, and the HA auth proxy
 src/
-  config/               # kiosk.yaml schema + validation (home.ts), loader, icon registry
+  apps/                 # every app type, one folder each (see "App types" below)
+  config/               # kiosk.yaml schema + validation (home.ts), shared schema helpers (fields.ts), loader, icons
   ha/                   # HaConnection interface, LiveConnection (home-assistant-js-websocket), mock
-  stores/               # config (parsed kiosk.yaml), entities (HA state), kiosk (dialogs, overlays, screensaver)
-  composables/          # useRoomLight, useVacuum, useAppStatus, useConfigReload, useIdle, useEvents, …
+  stores/               # config (parsed kiosk.yaml), entities (HA state), kiosk (dialogs, full-screen apps, screensaver)
+  composables/          # useRoomLight, useConfigReload, useIdle, useEvents, …
   components/
     atoms/              # GlassPanel, IconButton, RangeSlider, ProgressBar, ToggleSwitch
     molecules/          # ModalDialog, AppIcon, StatusChip, ClockDisplay, WeatherSummary, SceneButton, ColorPresets, CameraFeed
-    organisms/          # RoomTile, RoomDialog, AppDialog, VacuumPanel, TvPanel, SwitchPanel, LightsPanel (+ LightTile, LightControls), CameraOverlay, ScreenSaver, DevToolbar
+    organisms/          # RoomTile, RoomDialog, LightTile, LightControls, ScreenSaver, DevToolbar, ConfigHelpDialog
   views/                # HomeView, ConfigErrorView
   styles/               # design tokens (CSS custom properties) + base reset
 ```
 
 Every component talks to Home Assistant only through `HaConnection` (`subscribeEntities`, `subscribeStatus`, `callService`). `LiveConnection` and the mock both implement it, and `src/ha/connection.ts` picks one.
+
+### App types
+
+[`src/apps/index.ts`](src/apps/index.ts) lists every supported app type (`vacuum`, `tv`, `switch`, `lights`, `camera`). Each has its own folder:
+
+```
+src/apps/vacuum/
+  index.ts          # defineAppType: the kiosk.yaml keys (entity IDs + settings) and fake entities for dev mode
+  ui.ts             # the screen to open, and the Home screen chip status (optional)
+  VacuumPanel.vue   # the screen
+```
+
+To add one: copy a small folder like `switch/`, add it to `appTypes` in `src/apps/index.ts` and to the map in [`src/apps/ui.ts`](src/apps/ui.ts). Then run `npm run schema`. The type checker flags anything still missing. `index.ts` files stay free of Vue, so the schema loads without the UI.
 
 ### Styling conventions
 
