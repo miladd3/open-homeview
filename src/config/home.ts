@@ -8,10 +8,24 @@
 
 import { z } from 'zod'
 
+import { type AppConfig, appSchema, finishApp } from '@/apps'
 import type { Rgb } from '@/ha/lightColor'
-import { type IconName, icons } from './icons'
+import {
+  didYouMean,
+  entity,
+  type Gradient,
+  gradient,
+  icon,
+  lightList,
+  list,
+  object,
+  optional,
+  seconds,
+  text,
+} from './fields'
+import type { IconName } from './icons'
 
-export type Gradient = [string, string]
+export type { Gradient } from './fields'
 
 export interface SceneConfig {
   entityId: string
@@ -30,60 +44,6 @@ export interface RoomConfig {
 }
 
 export type ColorPreset = { name: string; kelvin: number } | { name: string; rgb: Rgb }
-
-interface AppBase {
-  id: string
-  name: string
-  icon: IconName
-  colors: Gradient
-  /** Left off the Home screen; it only opens from an event. */
-  hidden: boolean
-}
-
-export interface VacuumApp extends AppBase {
-  type: 'vacuum'
-  entities: {
-    vacuum: string
-    fullClean?: string
-    fullVacuum?: string
-    progress?: string
-    status?: string
-    battery?: string
-  }
-}
-
-export interface TvApp extends AppBase {
-  type: 'tv'
-  entities: { player: string; remote?: string }
-}
-
-export interface SwitchApp extends AppBase {
-  type: 'switch'
-  entities: { switch: string; sensors: string[] }
-}
-
-/** A named set of lights, shown as one section of the Lights app. */
-export interface LightGroup {
-  name: string
-  icon: IconName
-  lightEntityIds: string[]
-}
-
-/** Every light on its own, sorted into groups (rooms, floors, lamps vs. spots…). */
-export interface LightsApp extends AppBase {
-  type: 'lights'
-  groups: LightGroup[]
-}
-
-/** A live camera, shown full screen. */
-export interface CameraApp extends AppBase {
-  type: 'camera'
-  entities: { camera: string }
-  /** Closes after this long without a touch. */
-  autoCloseMs: number
-}
-
-export type AppConfig = VacuumApp | TvApp | SwitchApp | LightsApp | CameraApp
 
 /** Something happening in Home Assistant that opens an app on its own (a ring opens the camera). */
 export interface EventConfig {
@@ -129,117 +89,9 @@ const DEFAULT_COLORS: ColorPreset[] = [
 ]
 
 const DEFAULT_SCENE_COLORS: Gradient = ['#ffd27a', '#ff9f0a']
-const DEFAULT_APP_COLORS: Gradient = ['#8e8e93', '#48484a']
-const ENTITY_ID = /^[a-z_]+\.[a-z0-9_]+$/
-const ICON_NAMES = Object.keys(icons) as [IconName, ...IconName[]]
-
 export class ConfigError extends Error {
   override name = 'ConfigError'
 }
-
-// ---- did you mean ----
-
-function distance(a: string, b: string): number {
-  const row = Array.from({ length: b.length + 1 }, (_, i) => i)
-  for (let i = 1; i <= a.length; i++) {
-    let previous = row[0]!
-    row[0] = i
-    for (let j = 1; j <= b.length; j++) {
-      const current = row[j]!
-      row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1))
-      previous = current
-    }
-  }
-  return row[b.length]!
-}
-
-/** ` Did you mean "scenes"?` when one of `options` is close to `word`, else ''. */
-export function didYouMean(word: unknown, options: readonly string[]): string {
-  if (typeof word !== 'string') return ''
-  const lower = word.toLowerCase()
-  let best: string | undefined
-  let bestDistance = Math.max(2, Math.floor(lower.length / 3)) + 1
-  for (const option of options) {
-    const d = option.toLowerCase().startsWith(lower) ? 1 : distance(lower, option.toLowerCase())
-    if (d < bestDistance) [best, bestDistance] = [option, d]
-  }
-  return best ? ` Did you mean "${best}"?` : ''
-}
-
-// ---- building blocks ----
-
-/** An object that rejects unknown keys, naming the closest known one. */
-function object<Shape extends z.ZodRawShape>(shape: Shape) {
-  const keys = Object.keys(shape)
-  return z.strictObject(shape, {
-    error: (issue) =>
-      issue.code === 'unrecognized_keys'
-        ? issue.keys.map((key) => `.${key} is not a known key.${didYouMean(key, keys)}`).join('\n')
-        : undefined,
-  })
-}
-
-/** Optional key; YAML `key:` with no value (null) counts as not set. */
-function optional<T extends z.ZodType>(schema: T) {
-  return schema.nullish().transform((value) => value ?? undefined)
-}
-
-/** Optional list; a missing or empty (null) list is []. */
-function list<T extends z.ZodType>(item: T) {
-  return z
-    .array(item)
-    .nullish()
-    .transform((value) => value ?? [])
-}
-
-const text = z.string().trim().min(1, 'must not be empty')
-
-function entity(domain?: string, description?: string) {
-  const pattern = domain ? new RegExp(`^${domain}\\.[a-z0-9_]+$`) : ENTITY_ID
-  return z
-    .string()
-    .regex(pattern, {
-      error: (issue) =>
-        domain && ENTITY_ID.test(String(issue.input))
-          ? `"${String(issue.input)}" must be a ${domain}.* entity`
-          : `"${String(issue.input)}" is not a valid entity ID (like ${domain ?? 'light'}.kitchen)`,
-    })
-    .meta({
-      // Lets the server fill in this home's entity IDs as suggestions (see server/schema.ts).
-      'x-entity-domain': domain ?? '*',
-      description:
-        description ??
-        (domain
-          ? `A ${domain}.* entity ID from Home Assistant.`
-          : 'An entity ID from Home Assistant.'),
-    })
-}
-
-function icon(fallback: IconName) {
-  return z
-    .enum(ICON_NAMES, {
-      error: (issue) =>
-        `"${String(issue.input)}" is not a known icon.${didYouMean(issue.input, ICON_NAMES)}`,
-    })
-    .default(fallback)
-    .meta({ description: 'Icon name (Lucide). The full list is in src/config/icons.ts.' })
-}
-
-const color = text.meta({ description: 'Any CSS color, e.g. "#ff9f0a".' })
-
-function gradient(fallback: Gradient) {
-  return z
-    .tuple([color, color], { error: 'must be two colors: [from, to]' })
-    .default(fallback)
-    .meta({ description: 'Two colors for a gradient: [from, to].' })
-}
-
-const seconds = (fallback: number, description: string) =>
-  z.number().positive().default(fallback).meta({ description })
-
-const lightList = z
-  .array(entity('light'), { error: 'must be a list of light.* entities' })
-  .min(1, 'needs at least one light')
 
 // ---- the file ----
 
@@ -273,76 +125,6 @@ const room = object({
   lightEntityIds: raw.lights,
   scenes: raw.scenes,
 }))
-
-const lightGroup = object({
-  name: text,
-  icon: icon('lightbulb'),
-  lights: lightList,
-}).transform((raw): LightGroup => ({ name: raw.name, icon: raw.icon, lightEntityIds: raw.lights }))
-
-const appBase = {
-  id: text.meta({ description: 'Unique ID, e.g. vacuum.' }),
-  name: text,
-  icon: icon('house'),
-  colors: gradient(DEFAULT_APP_COLORS),
-  hidden: z
-    .boolean()
-    .default(false)
-    .meta({ description: 'Leave it off the Home screen; it then only opens from an event.' }),
-}
-
-/**
- * In kiosk.yaml an app's entity IDs sit right on the app (`camera: camera.door`);
- * the kiosk reads them from `app.entities`.
- */
-function withEntities<
-  Raw extends { id: string; name: string; icon: IconName; colors: Gradient; hidden: boolean },
->(raw: Raw) {
-  const { id, name, icon, colors, hidden, ...entities } = raw
-  return { id, name, icon, colors, hidden, entities }
-}
-
-const app = z.discriminatedUnion('type', [
-  object({
-    ...appBase,
-    type: z.literal('vacuum').meta({ description: 'A robot vacuum.' }),
-    vacuum: entity('vacuum'),
-    fullClean: optional(entity(undefined, 'Button that starts a full clean (vacuum + mop).')),
-    fullVacuum: optional(entity(undefined, 'Button that starts a full vacuum.')),
-    progress: optional(entity('sensor', 'Cleaning progress in %.')),
-    status: optional(entity('sensor', 'Detailed status text.')),
-    battery: optional(entity('sensor', 'Battery level in %.')),
-  }).transform(({ type, ...raw }) => ({ type, ...withEntities(raw) })),
-  object({
-    ...appBase,
-    type: z.literal('tv').meta({ description: 'A TV remote.' }),
-    player: entity('media_player'),
-    remote: optional(entity('remote')),
-  }).transform(({ type, ...raw }) => ({ type, ...withEntities(raw) })),
-  object({
-    ...appBase,
-    type: z.literal('switch').meta({ description: 'Any on/off entity, with optional sensors.' }),
-    switch: entity(undefined, 'Any on/off entity (switch, input_boolean, fan…).'),
-    sensors: list(entity('sensor')),
-  }).transform(({ type, ...raw }) => ({ type, ...withEntities(raw) })),
-  object({
-    ...appBase,
-    type: z.literal('lights').meta({ description: 'Every light on its own, sorted into groups.' }),
-    groups: optional(z.array(lightGroup).min(1, 'needs at least one group')).meta({
-      description: 'Sections of the app. Leave out for one group per room.',
-    }),
-  }),
-  object({
-    ...appBase,
-    type: z.literal('camera').meta({ description: 'A live camera, full screen.' }),
-    camera: entity('camera'),
-    autoCloseSeconds: seconds(60, 'Closes after this long without a touch.'),
-  }).transform(({ type, autoCloseSeconds, ...raw }) => ({
-    type,
-    ...withEntities(raw),
-    autoCloseMs: autoCloseSeconds * 1000,
-  })),
-])
 
 const event = object({
   entity: entity(
@@ -391,7 +173,7 @@ export const kioskYamlSchema = object({
     .meta({ description: 'lite: no live blur or shadows, for weak GPUs like a Raspberry Pi.' }),
   weather: optional(entity('weather')),
   rooms: list(room).meta({ description: 'Room tiles on the Home screen.' }),
-  apps: list(app).meta({ description: 'App icons on the Home screen.' }),
+  apps: list(appSchema).meta({ description: 'App icons on the Home screen.' }),
   events: list(event).meta({
     description:
       'Things in Home Assistant that open an app on their own, e.g. a ring opens the camera.',
@@ -449,28 +231,19 @@ export const kioskYamlSchema = object({
           message: 'is only for event.* entities',
         })
     })
-    raw.apps.forEach((item, i) => {
-      if (item.type === 'lights' && !item.groups && !raw.rooms.length)
-        ctx.addIssue({
-          code: 'custom',
-          path: ['apps', i, 'groups'],
-          message: 'needs at least one group (or rooms to make them from)',
-        })
-    })
   })
-  .transform((raw): HomeConfig => ({
+  .transform((raw, ctx): HomeConfig => ({
     wallpaper: raw.wallpaper,
     graphics: raw.graphics,
     weatherEntityId: raw.weather,
     rooms: raw.rooms,
-    apps: raw.apps.map((item): AppConfig => {
-      if (item.type !== 'lights') return item
-      // Without `groups`, one group per room, using the rooms' lights.
-      const groups =
-        item.groups ??
-        raw.rooms.map(({ name, icon, lightEntityIds }) => ({ name, icon, lightEntityIds }))
-      return { ...item, groups }
-    }),
+    apps: raw.apps.map((item, i) =>
+      finishApp(item, {
+        rooms: raw.rooms,
+        problem: (key, message) =>
+          ctx.addIssue({ code: 'custom', path: ['apps', i, key], message }),
+      }),
+    ),
     events: raw.events,
     colors: raw.colors ?? DEFAULT_COLORS,
     timings: {

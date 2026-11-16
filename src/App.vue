@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import AppDialog from '@/components/organisms/AppDialog.vue'
-import CameraOverlay from '@/components/organisms/CameraOverlay.vue'
+import { isFullScreen } from '@/apps'
+import { uiOf } from '@/apps/ui'
 import DevToolbar from '@/components/organisms/DevToolbar.vue'
 import RoomDialog from '@/components/organisms/RoomDialog.vue'
 import ScreenSaver from '@/components/organisms/ScreenSaver.vue'
@@ -23,11 +23,11 @@ const mock = useEntitiesStore().mock()
 const activeRoom = computed(() => config.home.rooms.find((room) => room.id === kiosk.activeRoomId))
 const activeApp = computed(() => {
   const app = config.home.apps.find((app) => app.id === kiosk.activeAppId)
-  return app?.type === 'camera' ? undefined : app
+  return app && !isFullScreen(app) ? app : undefined
 })
-const camera = computed(() => {
-  const app = config.home.apps.find((app) => app.id === kiosk.camera?.appId)
-  return app?.type === 'camera' ? app : undefined
+const fullScreenApp = computed(() => {
+  const app = config.home.apps.find((app) => app.id === kiosk.fullScreen?.appId)
+  return app && isFullScreen(app) ? app : undefined
 })
 const wallpaper = computed(() => ({
   '--wallpaper-from': config.home.wallpaper[0],
@@ -61,20 +61,26 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
     </Transition>
 
     <Transition name="dialog">
-      <AppDialog v-if="activeApp" :app="activeApp" @close="kiosk.closeDialogs" />
+      <component
+        :is="uiOf(activeApp).screen"
+        v-if="activeApp"
+        :app="activeApp"
+        @close="kiosk.closeDialogs"
+      />
     </Transition>
 
     <Transition name="screensaver">
       <ScreenSaver v-if="kiosk.screensaver" @wake="kiosk.wake" />
     </Transition>
 
-    <Transition name="camera">
-      <CameraOverlay
-        v-if="camera"
-        :key="camera.id"
-        :app="camera"
-        :message="kiosk.camera?.message"
-        @close="kiosk.closeCamera"
+    <Transition name="full-screen">
+      <component
+        :is="uiOf(fullScreenApp).screen"
+        v-if="fullScreenApp"
+        :key="fullScreenApp.id"
+        :app="fullScreenApp"
+        :message="kiosk.fullScreen?.message"
+        @close="kiosk.closeFullScreen"
       />
     </Transition>
 
@@ -111,7 +117,21 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
 }
 
 // Fading out: let taps through to the screen underneath.
-.page-leave-active {
+.page-leave-active,
+.full-screen-leave-active {
   pointer-events: none;
+}
+
+.full-screen-enter-active,
+.full-screen-leave-active {
+  transition:
+    opacity var(--duration-base) ease,
+    transform var(--duration-slow) var(--ease-spring);
+}
+
+.full-screen-enter-from,
+.full-screen-leave-to {
+  opacity: 0;
+  transform: scale(1.04);
 }
 </style>

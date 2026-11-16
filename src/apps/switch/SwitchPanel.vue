@@ -3,7 +3,7 @@ import { Gauge, Power } from '@lucide/vue'
 import { computed } from 'vue'
 
 import ModalDialog from '@/components/molecules/ModalDialog.vue'
-import type { SwitchApp } from '@/config/home'
+import type { SwitchApp } from '.'
 import { icons } from '@/config/icons'
 import { useEntitiesStore } from '@/stores/entities'
 

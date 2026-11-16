@@ -5,21 +5,22 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import IconButton from '@/components/atoms/IconButton.vue'
 import CameraFeed from '@/components/molecules/CameraFeed.vue'
 import ClockDisplay from '@/components/molecules/ClockDisplay.vue'
-import type { CameraApp } from '@/config/home'
+import type { CameraApp } from '.'
 
 // A camera app, full screen over everything. Opens from its icon or from an event
 // (a doorbell ring), which also passes the message to show.
 const props = defineProps<{ app: CameraApp; message?: string }>()
 const emit = defineEmits<{ close: [] }>()
 
-// Closes on its own once nobody has touched it for the app's `autoCloseMs`.
-const remainingMs = ref(props.app.autoCloseMs)
+// Closes on its own once nobody has touched it for the app's `autoCloseSeconds`.
+const autoCloseMs = props.app.autoCloseSeconds * 1000
+const remainingMs = ref(autoCloseMs)
 let deadline = 0
 let ticker: ReturnType<typeof setInterval> | undefined
 
 function resetCountdown() {
-  deadline = Date.now() + props.app.autoCloseMs
-  remainingMs.value = props.app.autoCloseMs
+  deadline = Date.now() + autoCloseMs
+  remainingMs.value = autoCloseMs
 }
 
 onMounted(() => {
@@ -161,24 +162,5 @@ const remainingSeconds = computed(() => Math.ceil(remainingMs.value / 1000))
   50% {
     transform: scale(1.04);
   }
-}
-
-// <Transition name="camera"> hooks
-.camera-enter-active,
-.camera-leave-active {
-  transition:
-    opacity var(--duration-base) ease,
-    transform var(--duration-slow) var(--ease-spring);
-}
-
-.camera-enter-from,
-.camera-leave-to {
-  opacity: 0;
-  transform: scale(1.04);
-}
-
-// Fading out: let taps through to the screen underneath.
-.camera-leave-active {
-  pointer-events: none;
 }
 </style>

@@ -5,9 +5,9 @@ import { computed } from 'vue'
 import IconButton from '@/components/atoms/IconButton.vue'
 import ProgressBar from '@/components/atoms/ProgressBar.vue'
 import ModalDialog from '@/components/molecules/ModalDialog.vue'
-import type { VacuumApp } from '@/config/home'
+import type { VacuumApp } from '.'
 import { icons } from '@/config/icons'
-import { useVacuum } from '@/composables/useVacuum'
+import { useVacuum } from './useVacuum'
 
 const props = defineProps<{ app: VacuumApp }>()
 const emit = defineEmits<{ close: [] }>()

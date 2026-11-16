@@ -38,7 +38,7 @@ describe('events', () => {
     await nextTick()
 
     expect(fired).toEqual(['event.front_door_doorbell'])
-    expect(kiosk.camera).toEqual({ appId: 'front-door', message: 'Someone is at the door' })
+    expect(kiosk.fullScreen).toEqual({ appId: 'front-door', message: 'Someone is at the door' })
     expect(kiosk.screensaver).toBe(false)
     expect(kiosk.activeRoomId).toBeNull()
 
@@ -77,7 +77,7 @@ describe('events', () => {
 
     expect(fired).toEqual(['binary_sensor.motion'])
     expect(kiosk.activeAppId).toBe('adguard')
-    expect(kiosk.camera).toBeNull()
+    expect(kiosk.fullScreen).toBeNull()
     expect(kiosk.screensaver).toBe(false)
     scope.stop()
   })

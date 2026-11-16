@@ -95,7 +95,7 @@ describe('parseHomeConfig', () => {
       type: 'camera',
       hidden: true,
       entities: { camera: 'camera.door' },
-      autoCloseMs: 30_000,
+      autoCloseSeconds: 30,
     })
     expect(config.events[0]).toEqual({
       entityId: 'binary_sensor.driveway_motion',

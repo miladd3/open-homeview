@@ -16,7 +16,7 @@ import { computed } from 'vue'
 
 import IconButton from '@/components/atoms/IconButton.vue'
 import ModalDialog from '@/components/molecules/ModalDialog.vue'
-import type { TvApp } from '@/config/home'
+import type { TvApp } from '.'
 import { icons } from '@/config/icons'
 import { useEntitiesStore } from '@/stores/entities'
 

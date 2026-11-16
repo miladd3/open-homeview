@@ -1,10 +1,10 @@
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 
-import type { VacuumApp } from '@/config/home'
+import type { VacuumApp } from '.'
 import { useEntitiesStore } from '@/stores/entities'
 
 function humanize(value: string) {
-  const text = value.replaceAll('_', ' ')
+  const text = value.replace(/_/g, ' ')
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 

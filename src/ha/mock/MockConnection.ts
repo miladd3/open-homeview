@@ -1,4 +1,5 @@
-import type { EventConfig, HomeConfig, VacuumApp } from '@/config/home'
+import type { VacuumApp } from '@/apps'
+import type { EventConfig, HomeConfig } from '@/config/home'
 import { kelvinToRgb } from '../lightColor'
 import type {
   ConnectionStatus,

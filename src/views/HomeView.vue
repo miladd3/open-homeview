@@ -8,9 +8,9 @@ import StatusChip from '@/components/molecules/StatusChip.vue'
 import WeatherSummary from '@/components/molecules/WeatherSummary.vue'
 import ConfigHelpDialog from '@/components/organisms/ConfigHelpDialog.vue'
 import RoomTile from '@/components/organisms/RoomTile.vue'
-import type { AppConfig } from '@/config/home'
+import type { AppConfig } from '@/apps'
+import { uiOf } from '@/apps/ui'
 import { icons } from '@/config/icons'
-import { useAppStatus } from '@/composables/useAppStatus'
 import { useMissingEntities } from '@/composables/useMissingEntities'
 import { useWeather } from '@/composables/useWeather'
 import { useConfigStore } from '@/stores/config'
@@ -41,7 +41,10 @@ const lightsOn = computed(() => countedLights.filter((id) => store.get(id)?.stat
 // The config never changes while mounted (an edit reloads the page).
 // Hidden apps only open from events, so they get no icon or chip.
 const shownApps = config.home.apps.filter((app) => !app.hidden)
-const appChips = shownApps.map((app) => ({ app, status: useAppStatus(app) }))
+const appChips = shownApps.map((app) => ({
+  app,
+  status: uiOf(app).status?.(app) ?? computed(() => null),
+}))
 
 function openApp(app: AppConfig) {
   kiosk.openApp(app.id)

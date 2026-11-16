@@ -1,6 +1,6 @@
 import source from '../../kiosk.example.yaml?raw'
 
-import type { VacuumApp } from '@/config/home'
+import type { VacuumApp } from '@/apps'
 import { parseConfigSource } from '@/config/load'
 
 /** The example config, so tests also prove the shipped example is valid. */

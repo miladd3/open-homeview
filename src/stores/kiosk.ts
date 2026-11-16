@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { isFullScreen } from '@/apps'
 import { useConfigStore } from './config'
 
-/** A camera app shown full screen, over everything. */
-export interface OpenCamera {
+/** An app shown full screen, over everything (a camera). */
+export interface FullScreenApp {
   appId: string
   /** Set when an event opened it, e.g. "Someone is at the door". */
   message?: string
@@ -14,7 +15,7 @@ export interface OpenCamera {
 export const useKioskStore = defineStore('kiosk', () => {
   const activeRoomId = ref<string | null>(null)
   const activeAppId = ref<string | null>(null)
-  const camera = ref<OpenCamera | null>(null)
+  const fullScreen = ref<FullScreenApp | null>(null)
   const screensaver = ref(false)
 
   function openRoom(roomId: string) {
@@ -23,18 +24,18 @@ export const useKioskStore = defineStore('kiosk', () => {
   }
 
   /**
-   * Opens an app: a camera full screen, anything else as its dialog. Also wakes
+   * Opens an app: full screen for types like camera, else as its dialog. Also wakes
    * the screen, so an event can open an app from the screensaver.
    */
   function openApp(appId: string, options: { message?: string } = {}) {
     const app = useConfigStore().home.apps.find((item) => item.id === appId)
     screensaver.value = false
-    if (app?.type === 'camera') {
+    if (app && isFullScreen(app)) {
       closeDialogs()
-      camera.value = { appId, message: options.message }
+      fullScreen.value = { appId, message: options.message }
       return
     }
-    // A dialog under a camera stays hidden until the camera closes.
+    // A dialog opened under a full-screen app shows once that closes.
     activeRoomId.value = null
     activeAppId.value = appId
   }
@@ -44,12 +45,12 @@ export const useKioskStore = defineStore('kiosk', () => {
     activeAppId.value = null
   }
 
-  function closeCamera() {
-    camera.value = null
+  function closeFullScreen() {
+    fullScreen.value = null
   }
 
   function sleep() {
-    if (camera.value) return
+    if (fullScreen.value) return
     closeDialogs()
     screensaver.value = true
   }
@@ -61,12 +62,12 @@ export const useKioskStore = defineStore('kiosk', () => {
   return {
     activeRoomId,
     activeAppId,
-    camera,
+    fullScreen,
     screensaver,
     openRoom,
     openApp,
     closeDialogs,
-    closeCamera,
+    closeFullScreen,
     sleep,
     wake,
   }

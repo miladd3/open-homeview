@@ -3,12 +3,12 @@ import { computed, ref, watch } from 'vue'
 
 import ToggleSwitch from '@/components/atoms/ToggleSwitch.vue'
 import ModalDialog from '@/components/molecules/ModalDialog.vue'
-import type { LightsApp } from '@/config/home'
+import type { LightsApp } from '.'
 import { icons } from '@/config/icons'
 import { useRoomLight } from '@/composables/useRoomLight'
 import { useEntitiesStore } from '@/stores/entities'
-import LightControls from './LightControls.vue'
-import LightTile from './LightTile.vue'
+import LightControls from '@/components/organisms/LightControls.vue'
+import LightTile from '@/components/organisms/LightTile.vue'
 
 // Every light on its own, sorted into the groups from kiosk.yaml. Groups are
 // listed on the left; tap a light's bulb to toggle it, or the tile for its
