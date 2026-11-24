@@ -28,7 +28,7 @@ describe('parseHomeConfig', () => {
       'switch',
       'camera',
     ])
-    expect(testConfig.dashboard.map((page) => page.length)).toEqual([9, 1])
+    expect(testConfig.dashboard.map((page) => page.length)).toEqual([11, 5])
     expect(testConfig.events).toEqual([
       {
         entityId: 'event.front_door_doorbell',
@@ -128,8 +128,8 @@ describe('parseHomeConfig', () => {
         [
           'clock',
           { app: 'lights', group: 'den', size: '2x1' },
-          { type: 'vacuum', vacuum: 'vacuum.robot_vacuum' },
-          { type: 'clock', name: 'Time', icon: 'trees' },
+          { type: 'scene', entity: 'scene.movie_night' },
+          { type: 'sensor', entity: 'sensor.outside', name: 'Outside', icon: 'trees' },
         ],
         [{ app: 'lights' }],
       ],
@@ -140,13 +140,13 @@ describe('parseHomeConfig', () => {
     // Inline entries become hidden apps of their own, named after their entity.
     expect(page1![2]!.app).toMatchObject({
       id: 'dashboard/0/2',
-      type: 'vacuum',
-      name: 'Robot vacuum',
-      icon: 'house',
+      type: 'scene',
+      name: 'Movie night',
+      icon: 'sparkles',
       hidden: true,
-      entities: { vacuum: 'vacuum.robot_vacuum' },
+      entities: { entity: 'scene.movie_night' },
     })
-    expect(page1![3]!.app).toMatchObject({ name: 'Time', icon: 'trees' })
+    expect(page1![3]!.app).toMatchObject({ name: 'Outside', icon: 'trees' })
     expect(config.apps.map((a) => a.id)).toContain('dashboard/0/2')
     expect(page2![0]!.settings).toEqual({})
   })
@@ -243,10 +243,10 @@ describe('parseHomeConfig', () => {
       { ...withGroups(room), dashboard: [[{ app: 'lights', grup: 'den' }]] },
       'dashboard[0][0].grup is not a known key. Did you mean "group"?',
     ],
-    [{ dashboard: [[{ type: 'tv' }]] }, 'dashboard[0][0].player is required'],
+    [{ dashboard: [[{ type: 'lock' }]] }, 'dashboard[0][0].entity is required'],
     [
-      { dashboard: [[{ type: 'tv', player: 'light.x' }]] },
-      'dashboard[0][0].player "light.x" must be a media_player.* entity',
+      { dashboard: [[{ type: 'lock', entity: 'light.x' }]] },
+      'dashboard[0][0].entity "light.x" must be a lock.* entity',
     ],
     [{ dashboard: [[{ type: 'clock', id: 'c' }]] }, 'dashboard[0][0].id is not a known key'],
     [{ dashboard: [[{ size: '1x1' }]] }, 'dashboard[0][0] needs `app` (an app ID) or `type`'],

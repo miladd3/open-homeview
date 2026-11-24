@@ -92,11 +92,13 @@
                       "file-cog",
                       "flower",
                       "gamepad",
+                      "gauge",
                       "house",
                       "lamp",
                       "lamp-desk",
                       "laptop",
                       "lightbulb",
+                      "lock",
                       "monitor",
                       "music",
                       "plug",
@@ -104,6 +106,7 @@
                       "shield-check",
                       "shower",
                       "sofa",
+                      "sparkles",
                       "speaker",
                       "thermometer",
                       "trees",
@@ -179,6 +182,115 @@
                     "minLength": 1
                   },
                   "icon": {
+                    "default": "thermometer",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "gauge",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "lock",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "sparkles",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "climate",
+                    "description": "A thermostat. The 2x2 size has buttons to change the target."
+                  },
+                  "entity": {
+                    "type": "string",
+                    "pattern": "^climate\\.[a-z0-9_]+$",
+                    "x-entity-domain": "climate",
+                    "description": "A climate.* entity ID from Home Assistant."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "entity"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
                     "default": "clock",
                     "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
                     "type": "string",
@@ -204,11 +316,13 @@
                       "file-cog",
                       "flower",
                       "gamepad",
+                      "gauge",
                       "house",
                       "lamp",
                       "lamp-desk",
                       "laptop",
                       "lightbulb",
+                      "lock",
                       "monitor",
                       "music",
                       "plug",
@@ -216,6 +330,7 @@
                       "shield-check",
                       "shower",
                       "sofa",
+                      "sparkles",
                       "speaker",
                       "thermometer",
                       "trees",
@@ -278,6 +393,115 @@
                     "minLength": 1
                   },
                   "icon": {
+                    "default": "lightbulb",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "gauge",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "lock",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "sparkles",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "light",
+                    "description": "One light: tap toggles it, long-press sets its brightness."
+                  },
+                  "entity": {
+                    "type": "string",
+                    "pattern": "^light\\.[a-z0-9_]+$",
+                    "x-entity-domain": "light",
+                    "description": "A light.* entity ID from Home Assistant."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "entity"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
                     "default": "house",
                     "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
                     "type": "string",
@@ -303,11 +527,13 @@
                       "file-cog",
                       "flower",
                       "gamepad",
+                      "gauge",
                       "house",
                       "lamp",
                       "lamp-desk",
                       "laptop",
                       "lightbulb",
+                      "lock",
                       "monitor",
                       "music",
                       "plug",
@@ -315,6 +541,7 @@
                       "shield-check",
                       "shower",
                       "sofa",
+                      "sparkles",
                       "speaker",
                       "thermometer",
                       "trees",
@@ -404,11 +631,13 @@
                             "file-cog",
                             "flower",
                             "gamepad",
+                            "gauge",
                             "house",
                             "lamp",
                             "lamp-desk",
                             "laptop",
                             "lightbulb",
+                            "lock",
                             "monitor",
                             "music",
                             "plug",
@@ -416,6 +645,7 @@
                             "shield-check",
                             "shower",
                             "sofa",
+                            "sparkles",
                             "speaker",
                             "thermometer",
                             "trees",
@@ -535,6 +765,333 @@
                     "minLength": 1
                   },
                   "icon": {
+                    "default": "lock",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "gauge",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "lock",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "sparkles",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "lock",
+                    "description": "A door lock: tap locks or unlocks it."
+                  },
+                  "entity": {
+                    "type": "string",
+                    "pattern": "^lock\\.[a-z0-9_]+$",
+                    "x-entity-domain": "lock",
+                    "description": "A lock.* entity ID from Home Assistant."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "entity"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "sparkles",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "gauge",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "lock",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "sparkles",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "scene",
+                    "description": "Runs one scene."
+                  },
+                  "entity": {
+                    "type": "string",
+                    "pattern": "^scene\\.[a-z0-9_]+$",
+                    "x-entity-domain": "scene",
+                    "description": "A scene.* entity ID from Home Assistant."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "entity"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "gauge",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "gauge",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "lock",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "sparkles",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "sensor",
+                    "description": "One sensor reading."
+                  },
+                  "entity": {
+                    "type": "string",
+                    "pattern": "^sensor\\.[a-z0-9_]+$",
+                    "x-entity-domain": "sensor",
+                    "description": "A sensor.* entity ID from Home Assistant."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "entity"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
                     "default": "house",
                     "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
                     "type": "string",
@@ -560,11 +1117,13 @@
                       "file-cog",
                       "flower",
                       "gamepad",
+                      "gauge",
                       "house",
                       "lamp",
                       "lamp-desk",
                       "laptop",
                       "lightbulb",
+                      "lock",
                       "monitor",
                       "music",
                       "plug",
@@ -572,6 +1131,7 @@
                       "shield-check",
                       "shower",
                       "sofa",
+                      "sparkles",
                       "speaker",
                       "thermometer",
                       "trees",
@@ -682,11 +1242,13 @@
                       "file-cog",
                       "flower",
                       "gamepad",
+                      "gauge",
                       "house",
                       "lamp",
                       "lamp-desk",
                       "laptop",
                       "lightbulb",
+                      "lock",
                       "monitor",
                       "music",
                       "plug",
@@ -694,6 +1256,7 @@
                       "shield-check",
                       "shower",
                       "sofa",
+                      "sparkles",
                       "speaker",
                       "thermometer",
                       "trees",
@@ -801,11 +1364,13 @@
                       "file-cog",
                       "flower",
                       "gamepad",
+                      "gauge",
                       "house",
                       "lamp",
                       "lamp-desk",
                       "laptop",
                       "lightbulb",
+                      "lock",
                       "monitor",
                       "music",
                       "plug",
@@ -813,6 +1378,7 @@
                       "shield-check",
                       "shower",
                       "sofa",
+                      "sparkles",
                       "speaker",
                       "thermometer",
                       "trees",
@@ -972,11 +1538,13 @@
                       "file-cog",
                       "flower",
                       "gamepad",
+                      "gauge",
                       "house",
                       "lamp",
                       "lamp-desk",
                       "laptop",
                       "lightbulb",
+                      "lock",
                       "monitor",
                       "music",
                       "plug",
@@ -984,6 +1552,7 @@
                       "shield-check",
                       "shower",
                       "sofa",
+                      "sparkles",
                       "speaker",
                       "thermometer",
                       "trees",
@@ -1073,7 +1642,7 @@
                       ]
                     },
                     "type": {
-                      "description": "An app type written right here, with its keys. One of: camera, clock, lights, switch, tv, vacuum, weather.",
+                      "description": "An app type written right here, with its keys. One of: camera, climate, clock, light, lights, lock, scene, sensor, switch, tv, vacuum, weather.",
                       "anyOf": [
                         {
                           "type": "string",

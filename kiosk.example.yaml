@@ -24,8 +24,8 @@ weather: weather.forecast_home
 # Your apps. Each has a widget on the dashboard, and most open full screen when
 # you tap it (✕ or Esc closes them).
 # Types: vacuum, tv, switch (any on/off entity plus optional sensors), lights,
-# camera. These have only a widget: clock, weather; they are usually written
-# right on the dashboard (see below).
+# camera. These have only a widget: clock, weather, scene, light, climate, lock,
+# sensor; they are usually written right on the dashboard (see below).
 apps:
   # Every light on its own, sorted into groups. Groups are the rooms: each is a
   # section of the app with its scenes, and can be a widget on the dashboard.
@@ -149,22 +149,29 @@ apps:
 # the weather, each Lights group, then every app without `hidden: true`.
 #   clock                     a type with no keys
 #   { app: vacuum }           the widget of an app above
-#   weather                   a widget-only type written right here
+#   { type: lock, entity: … } a widget-only type written right here
 dashboard:
   - # page 1
     - clock
+    # ⌄ ⌃ change the target in the 2x2 size.
+    - { type: climate, entity: climate.living_room, name: Living Room, size: 2x2 }
     - { app: front-door } # a snapshot; tap for the live camera
     - weather # the `weather:` entity above
     # One Lights group: tap toggles it, the corner arrow opens it in the app.
-    # Long-press it for a brightness slider.
+    # Long-press any light widget for a brightness slider.
     - { app: lights, group: living-room }
     - { app: lights, group: bedroom }
     - { app: lights, group: office }
+    - { type: scene, entity: scene.living_room_rest, name: Rest }
     - { app: vacuum, size: 2x1 }
     - { app: lights } # every light: how many are on
     - { app: tv }
   - # page 2
     - { app: adguard }
+    - { type: light, entity: light.hallway, name: Hallway }
+    - { type: lock, entity: lock.front_door, name: Front Door }
+    - { type: sensor, entity: sensor.outdoor_temperature, name: Outside, size: 2x1 }
+    - { type: sensor, entity: sensor.outdoor_humidity, name: Humidity }
 
 # Things happening in Home Assistant that open an app on their own, over
 # everything (also wakes the screensaver).

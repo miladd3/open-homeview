@@ -50,7 +50,7 @@ Images are built for `amd64` and `arm64`. Tags: `latest` (main branch), and `x.y
 | Camera      | Full-screen camera. Opens from its widget or from an event (a doorbell ring, over everything); closes after 60 s without a touch. |
 | Screensaver | After 60 s idle: big clock + weather, dimmed 22:00–07:00, small pixel shift against burn-in.                                      |
 
-Rooms are the Lights app's groups. A group's widget toggles its lights on tap; its corner arrow opens the Lights app scrolled to that room. **Long-press** a room widget for a brightness slider.
+Rooms are the Lights app's groups. A group's widget toggles its lights on tap; its corner arrow opens the Lights app scrolled to that room. **Long-press** a light or room widget for a brightness slider.
 
 ## Configuration: `kiosk.yaml`
 
@@ -62,8 +62,8 @@ Apps, the dashboard, scenes, events, weather, color swatches, wallpaper and timi
 - Entity IDs that Home Assistant doesn't know show up in the **kiosk.yaml** notice on the Home screen, instead of silently showing "Unavailable".
 - A scene can be written as just its entity ID: `scenes: [scene.bedroom_read]`. Add `name:` and `colors:` only when you want them.
 - Icons are referenced by name from [`src/config/icons.ts`](src/config/icons.ts). Add a Lucide icon there to make it available.
-- App types: `vacuum`, `tv`, `switch` (any on/off entity plus optional sensors), `lights` and `camera`. These only have a widget: `clock` and `weather`.
-- `dashboard` is a list of pages, each a list of widgets that flow into the grid in order (a full page goes on to the next). An entry is `clock` (a type with no keys), `{ app: vacuum }` (an app from `apps`), or a type written inline: `weather`, `{ type: switch, switch: switch.fan }`. Inline entries need no `id`, and their `name` defaults to the entity's (`switch.fan` → Fan). Any entry takes a `size` (`1x1`, `2x1`, `1x2`, `2x2`, `4x2`: columns × rows) that its widget offers. A Lights widget takes a `group`: `{ app: lights, group: bedroom }`.
+- App types: `vacuum`, `tv`, `switch` (any on/off entity plus optional sensors), `lights` and `camera`. These only have a widget: `clock`, `weather`, `scene`, `light`, `climate`, `lock` and `sensor`.
+- `dashboard` is a list of pages, each a list of widgets that flow into the grid in order (a full page goes on to the next). An entry is `clock` (a type with no keys), `{ app: vacuum }` (an app from `apps`), or a type written inline: `{ type: lock, entity: lock.front_door }`. Inline entries need no `id`, and their `name` defaults to the entity's (`lock.front_door` → Front door). Any entry takes a `size` (`1x1`, `2x1`, `1x2`, `2x2`, `4x2`: columns × rows) that its widget offers. A Lights widget takes a `group`: `{ app: lights, group: bedroom }`.
 - Without `dashboard`, the kiosk makes one: the clock, the weather, each Lights group, then every app. Add `hidden: true` to leave an app out of it (it then only opens from an event).
 - `events` open an app on their own, over everything (and out of the screensaver). Each names an `entity` and the app to `open`. An `event.*` entity (a doorbell ring, a button press) fires every time it changes, optionally only for some `eventTypes`. Any other entity fires when it changes `to` a state, e.g. `binary_sensor.driveway_motion` with `to: 'on'`. A `message` shows on the camera view (e.g. "Someone is at the door").
 - An app's entity IDs go right on the app (`camera: camera.front_door`, `player: media_player.tv`).
@@ -156,11 +156,11 @@ src/apps/vacuum/
 ```
 
 - `widget: { widgetScreen, sizes, quick?, complication?, settings?, check? }`. `sizes` lists the cells it can take; the first is the default. A widget gets `app`, `size` and `mode` (plus `settings` if it declares any) and emits `open` to open the screen. Text sizes follow the cell height (`--u` inside `<Widget>`), so a widget looks the same in every size; the big value grows with the widget.
-- `quick` is shown over the widget on a long-press (the brightness slider of `lights`).
+- `quick` is shown over the widget on a long-press (the brightness slider of `light` and `lights`).
 - `settings` are keys of the widget itself on a dashboard entry (`group` on a Lights widget), checked like app keys; `check` cross-checks them against the app.
-- A type without `widget` gets a 1×1 one from its `status` (icon, name, status text; tap opens the screen). A type without `screen` is widget-only (clock, weather).
+- A type without `widget` gets a 1×1 one from its `status` (icon, name, status text; tap opens the screen). A type without `screen` is widget-only (clock, scene…).
 
-App folders import only from `@/kit` (UI), `@/kit/define` (`index.ts`), `vue`, `@lucide/vue` and their own folder; `npm run lint` enforces it. Talk to Home Assistant with `useEntity` and `useService`. To add one: copy a small folder like `switch/`, then run `npm run schema`. The screen and widget are lazy imports (`screen: () => import('./VacuumPanel.vue')`), so the schema loads without the UI and each is its own chunk. A widget that throws shows as a grey "Widget error" cell; the rest of the dashboard keeps working.
+App folders import only from `@/kit` (UI), `@/kit/define` (`index.ts`), `vue`, `@lucide/vue` and their own folder; `npm run lint` enforces it. Talk to Home Assistant with `useEntity` and `useService`. To add one: copy a small folder like `switch/` or `lock/`, then run `npm run schema`. The screen and widget are lazy imports (`screen: () => import('./VacuumPanel.vue')`), so the schema loads without the UI and each is its own chunk. A widget that throws shows as a grey "Widget error" cell; the rest of the dashboard keeps working.
 
 ### Styling conventions
 

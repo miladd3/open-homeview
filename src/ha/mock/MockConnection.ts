@@ -119,6 +119,12 @@ export class MockConnection implements HaConnection {
         return this.patch(entityId, current.state, {
           is_volume_muted: Boolean(data.is_volume_muted),
         })
+      case 'lock.lock':
+        return this.patch(entityId, 'locked')
+      case 'lock.unlock':
+        return this.patch(entityId, 'unlocked')
+      case 'climate.set_temperature':
+        return this.patch(entityId, current.state, { temperature: data.temperature })
       case 'remote.send_command':
         return console.info(`[mock-ha] ${entityId} ← ${String(data.command)}`)
       case 'button.press':
