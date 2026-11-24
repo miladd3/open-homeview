@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
-import { createConnection } from '@/ha/connection'
-import { MockConnection } from '@/ha/mock/MockConnection'
+import type { MockConnection } from '@/ha/mock/MockConnection'
 import type {
   CameraWatcher,
   ConnectionStatus,
@@ -11,7 +10,6 @@ import type {
   HassEntity,
   ServiceTarget,
 } from '@/ha/types'
-import { useConfigStore } from './config'
 
 /** How long a predicted state may show without Home Assistant confirming it. */
 const PREDICTION_TIMEOUT_MS = 5_000
@@ -49,7 +47,9 @@ export const useEntitiesStore = defineStore('entities', () => {
   let connection: HaConnection | null = null
   let unsubscribe: (() => void)[] = []
 
-  function connect(conn: HaConnection = createConnection(useConfigStore().home)) {
+  // Takes the connection from outside (main.ts, tests), so this store doesn't
+  // import the config or the app types: they import it, through the kit.
+  function connect(conn: HaConnection) {
     disconnect()
     connection = conn
     unsubscribe = [
@@ -138,7 +138,7 @@ export const useEntitiesStore = defineStore('entities', () => {
 
   /** Only set while running against the mock; used by the dev toolbar. */
   function mock(): MockConnection | null {
-    return connection instanceof MockConnection ? connection : null
+    return connection && 'isMock' in connection ? (connection as MockConnection) : null
   }
 
   return { entities, status, connect, disconnect, get, callService, watchCamera, mock }

@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
 import App from './App.vue'
+import { createConnection } from './ha/connection'
 import router from './router'
 import { useConfigStore } from './stores/config'
 import { useEntitiesStore } from './stores/entities'
@@ -28,7 +29,7 @@ async function start() {
   const app = createApp(App)
   app.use(pinia)
   app.use(router)
-  useEntitiesStore(pinia).connect()
+  useEntitiesStore(pinia).connect(createConnection(useConfigStore(pinia).home))
   app.mount('#app')
 }
 

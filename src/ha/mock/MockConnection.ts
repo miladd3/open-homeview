@@ -20,6 +20,8 @@ type ServiceData = Record<string, unknown>
  * behaviour for every control in the kiosk to round-trip through state.
  */
 export class MockConnection implements HaConnection {
+  /** Lets the entities store spot the mock without importing this class. */
+  readonly isMock = true
   private states: HassEntities
   private listeners = new Set<(entities: HassEntities) => void>()
   private vacuumTimer: ReturnType<typeof setInterval> | null = null
