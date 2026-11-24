@@ -66,7 +66,6 @@ Apps, rooms, scenes, events, weather, color swatches, wallpaper and timings all 
 - `events` open an app on their own, over everything (and out of the screensaver). Each names an `entity` and the app to `open`. An `event.*` entity (a doorbell ring, a button press) fires every time it changes, optionally only for some `eventTypes`. Any other entity fires when it changes `to` a state, e.g. `binary_sensor.driveway_motion` with `to: 'on'`. A `message` shows on the camera view (e.g. "Someone is at the door").
 - An app's entity IDs go right on the app (`camera: camera.front_door`, `player: media_player.tv`).
 - The `lights` app lists `groups` (usually rooms), each with a `name`, an optional `icon`, its `lights` and optional `scenes`. A group's `id` defaults to its name in lower case with dashes (`Living Room` → `living-room`).
-- Older files with a top-level `rooms:` still work: the rooms become the Lights app's groups (a Lights app is added if there is none). If the Lights app has its own `groups`, `rooms:` is ignored. Either way the browser console warns; move the rooms into `groups`.
 
 ### Autocomplete in your editor
 

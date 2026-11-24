@@ -32,8 +32,8 @@ beforeEach(async () => {
   await writeFile(join(dir, 'dist/index.html'), '<html>shell</html>')
   await writeFile(join(dir, 'dist/assets/app-123.js'), 'console.log(1)')
   await writeFile(join(dir, 'secret.txt'), 'outside dist')
-  await writeFile(join(dir, 'example.yaml'), 'rooms: [] # example')
-  await writeFile(join(dir, 'kiosk.yaml'), 'rooms: [] # mine')
+  await writeFile(join(dir, 'example.yaml'), 'apps: [] # example')
+  await writeFile(join(dir, 'kiosk.yaml'), 'apps: [] # mine')
   await writeFile(join(dir, 'schema.json'), '{"title":"kiosk"}')
 })
 
@@ -55,14 +55,14 @@ describe('server', () => {
   it('serves kiosk.yaml, or the example while it does not exist', async () => {
     await start(join(dir, 'kiosk.yaml'))
     const config = await fetch(`${base}/config/kiosk.yaml`)
-    expect(await config.text()).toBe('rooms: [] # mine')
+    expect(await config.text()).toBe('apps: [] # mine')
     expect(config.headers.get('cache-control')).toBe('no-store')
     expect(config.headers.get('x-kiosk-config')).toBeNull()
     server.close()
 
     await start(join(dir, 'missing.yaml'))
     const example = await fetch(`${base}/config/kiosk.yaml`)
-    expect(await example.text()).toBe('rooms: [] # example')
+    expect(await example.text()).toBe('apps: [] # example')
     expect(example.headers.get('x-kiosk-config')).toBe('example')
   })
 

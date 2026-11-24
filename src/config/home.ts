@@ -254,50 +254,9 @@ export function configProblems(error: z.ZodError): string[] {
   return error.issues.flatMap((issue) => issueText(issue))
 }
 
-type Raw = Record<string, unknown>
-const isMapping = (value: unknown): value is Raw =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-
-/**
- * Old configs had a top-level `rooms:`. Rooms are now the groups of the Lights
- * app, so they become its `groups` (adding a Lights app if there is none).
- */
-function migrateRooms(value: unknown): unknown {
-  if (!isMapping(value) || !('rooms' in value)) return value
-  const { rooms, ...rest } = value
-  if (rooms == null || (Array.isArray(rooms) && !rooms.length)) return rest
-  const apps = Array.isArray(rest.apps) ? rest.apps : []
-  const lightsApp = apps.find((app): app is Raw => isMapping(app) && app.type === 'lights')
-  if (lightsApp?.groups != null) {
-    console.warn(
-      '[config] kiosk.yaml has `rooms:` and a Lights app with `groups:`, so `rooms:` is ignored. Move each room (with its scenes) into `groups:`.',
-    )
-    return rest
-  }
-  console.warn(
-    '[config] `rooms:` is now `groups:` on the Lights app. It still works; see kiosk.example.yaml.',
-  )
-  return {
-    ...rest,
-    apps: lightsApp
-      ? apps.map((app) => (app === lightsApp ? { ...app, groups: rooms } : app))
-      : [
-          ...apps,
-          {
-            id: 'lights',
-            type: 'lights',
-            name: 'Lights',
-            icon: 'lightbulb',
-            colors: ['#ffd60a', '#ff9f0a'],
-            groups: rooms,
-          },
-        ],
-  }
-}
-
 /** Validates the parsed YAML and fills in defaults. Throws `ConfigError` naming the bad keys. */
 export function parseHomeConfig(value: unknown): HomeConfig {
-  const result = kioskYamlSchema.safeParse(migrateRooms(value ?? {}), { reportInput: true })
+  const result = kioskYamlSchema.safeParse(value ?? {}, { reportInput: true })
   if (result.success) return result.data
   const problems = configProblems(result.error)
   throw new ConfigError(problems.slice(0, 5).join('\n'))

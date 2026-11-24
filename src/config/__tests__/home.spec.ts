@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { testConfig } from '@/__tests__/testConfig'
 import type { LightsApp } from '@/apps'
@@ -60,30 +60,6 @@ describe('parseHomeConfig', () => {
     })
     expect(group.scenes[0]!.colors).toHaveLength(2)
     expect(lightsOf(config).colorPresets.length).toBeGreaterThan(0)
-  })
-
-  it('still reads old `rooms:` as the Lights groups, with a warning', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const rooms = [{ ...room, icon: 'sofa', scenes: ['scene.den_movie'] }]
-
-    // No Lights app: one is added.
-    expect(lightsOf(parseHomeConfig({ rooms }))).toMatchObject({
-      id: 'lights',
-      groups: [{ id: 'den', icon: 'sofa', scenes: [{ entityId: 'scene.den_movie' }] }],
-    })
-    // A Lights app without groups gets the rooms.
-    const config = parseHomeConfig({ rooms, apps: [{ id: 'l', type: 'lights', name: 'L' }] })
-    expect(config.apps).toHaveLength(1)
-    expect(lightsOf(config).groups[0]!.name).toBe('Den')
-    // Its own groups win.
-    expect(
-      lightsOf(
-        parseHomeConfig({ rooms, ...withGroups({ name: 'Hall', lights: ['light.hall'] }) }),
-      ).groups.map((g) => g.id),
-    ).toEqual(['hall'])
-
-    expect(warn).toHaveBeenCalledTimes(3)
-    warn.mockRestore()
   })
 
   it('accepts a scene as just its entity ID, and empty keys as not set', () => {
@@ -168,6 +144,7 @@ describe('parseHomeConfig', () => {
       'apps[0].entities is not a known key',
     ],
     [{ doorbell: { camera: 'camera.door' } }, 'doorbell is not a known key'],
+    [{ rooms: [room] }, 'rooms is not a known key'],
     [
       { apps: [{ id: 't', name: 'T', type: 'tv', player: 'media_player.tv', remot: 'remote.tv' }] },
       'apps[0].remot is not a known key. Did you mean "remote"?',

@@ -10,8 +10,10 @@ describe('entityIdsIn', () => {
   it('finds entity IDs anywhere in the config and ignores other strings', () => {
     const ids = entityIdsIn({
       wallpaper: ['#000', '#fff'],
-      rooms: [{ name: 'Bed Room', icon: 'shield-check', lights: ['light.bedroom'] }],
-      apps: [{ entities: { sensors: ['sensor.speed'] } }],
+      apps: [
+        { groups: [{ name: 'Bed Room', icon: 'shield-check', lights: ['light.bedroom'] }] },
+        { entities: { sensors: ['sensor.speed'] } },
+      ],
     })
     expect([...ids].sort()).toEqual(['light.bedroom', 'sensor.speed'])
   })
