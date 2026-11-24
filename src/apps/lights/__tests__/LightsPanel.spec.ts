@@ -52,7 +52,7 @@ describe('LightsPanel', () => {
     wrapper.unmount()
   })
 
-  it('toggles a light from its card icon, and a whole group from its row', async () => {
+  it('toggles a light from its card icon, and a whole group from its switch or icon', async () => {
     const wrapper = mountPanel()
     const den = wrapper.findAll('.group')[0]!
     const spot = () => store.get('light.den_spot')!.state
@@ -63,6 +63,11 @@ describe('LightsPanel', () => {
 
     await den.find('.header .toggle-switch').trigger('click')
     expect([store.get('light.den_lamp')!.state, spot()]).toEqual(['off', 'off'])
+
+    // The group's icon toggles it too; its color swatches are always there.
+    await den.find('.header .icon').trigger('click')
+    expect([store.get('light.den_lamp')!.state, spot()]).toEqual(['on', 'on'])
+    expect(den.findAll('.header .color-presets .swatch').length).toBeGreaterThan(0)
     wrapper.unmount()
   })
 

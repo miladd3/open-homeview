@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { icons, RangeSlider, ToggleSwitch } from '@/kit'
 import type { ColorPreset, IconName } from '@/kit/define'
@@ -7,17 +7,15 @@ import ColorPresets from './ColorPresets.vue'
 import { useLightGroup } from './useLightGroup'
 
 // One row of the Lights app: a whole group (its header) or the options of the
-// light picked from the cards.
-// Toggle and brightness on the row, and the color swatches the lights support
-// underneath: always for a single light, on a tap of the icon for a group.
+// light picked from the cards. The icon (groups only) and the switch toggle the
+// lights; brightness on the row, and the color swatches they support underneath.
 const props = defineProps<{
   lightEntityIds: string[]
   presets: ColorPreset[]
   /** Defaults to the light's name in Home Assistant. */
   name?: string
+  /** Leave out for no icon (a light's options). */
   icon?: IconName
-  /** Always show the color swatches, with no icon (the light's options). */
-  colorsOpen?: boolean
 }>()
 
 const {
@@ -33,7 +31,6 @@ const {
   setKelvin,
 } = useLightGroup(() => props.lightEntityIds)
 
-const showColors = ref(false)
 const name = computed(
   () =>
     props.name ??
@@ -61,20 +58,20 @@ function selectColor(preset: ColorPreset) {
 <template>
   <div
     class="light-row"
-    :class="{ '-on': isOn, '-unavailable': !isAvailable, '-options': colorsOpen }"
+    :class="{ '-on': isOn, '-unavailable': !isAvailable }"
   >
     <div class="main">
       <button
-        v-if="!colorsOpen"
+        v-if="icon"
         class="icon"
         type="button"
-        :aria-expanded="showColors"
-        :aria-label="`${name} colors`"
-        :disabled="!shownPresets.length"
+        :aria-pressed="isOn"
+        :aria-label="isOn ? `Turn ${name} off` : `Turn ${name} on`"
+        :disabled="!isAvailable"
         :style="{ '--glow': glow }"
-        @click="showColors = !showColors"
+        @click="toggle"
       >
-        <component :is="icons[icon ?? 'lightbulb']" :size="28" :stroke-width="1.8" />
+        <component :is="icons[icon]" :size="28" :stroke-width="1.8" />
       </button>
       <span class="texts">
         <span class="name">{{ name }}</span>
@@ -97,7 +94,7 @@ function selectColor(preset: ColorPreset) {
       />
     </div>
     <ColorPresets
-      v-if="colorsOpen || showColors"
+      v-if="shownPresets.length"
       class="colors"
       :presets="shownPresets"
       @select="selectColor"
@@ -172,17 +169,14 @@ function selectColor(preset: ColorPreset) {
     margin-left: auto;
   }
 
-  > .colors {
-    padding-left: calc(56px + var(--space-m));
-
-    :deep(.swatch) {
-      width: 52px;
-      height: 52px;
-    }
+  > .colors :deep(.swatch) {
+    width: 52px;
+    height: 52px;
   }
 
-  &.-options > .colors {
-    padding-left: 0;
+  // Under the name, not the icon.
+  &:has(> .main > .icon) > .colors {
+    padding-left: calc(56px + var(--space-m));
   }
 
   &.-on > .main > .icon {

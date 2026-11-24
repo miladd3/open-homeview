@@ -91,7 +91,6 @@ onBeforeUnmount(() => clearTimeout(highlightTimer))
         class="options"
         :light-entity-ids="[selected.slice(group.id.length + 1)]"
         :presets="app.colorPresets"
-        colors-open
       />
     </section>
   </AppSheet>
@@ -111,6 +110,10 @@ onBeforeUnmount(() => clearTimeout(highlightTimer))
     transition:
       background-color var(--duration-slow) ease,
       border-color var(--duration-slow) ease;
+
+    & + .group {
+      margin-top: var(--space-m);
+    }
 
     &.-highlighted {
       border-color: rgb(255 255 255 / 70%);
