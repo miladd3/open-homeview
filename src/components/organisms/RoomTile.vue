@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import type { LightGroup } from '@/apps'
-import { useLightGroup } from '@/apps/lights/useLightGroup'
+import { useLightGroup } from '@/kit'
 import { icons } from '@/config/icons'
 
 // Apple Home style tile for a Lights group. Tapping the icon toggles its lights;

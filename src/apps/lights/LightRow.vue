@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { icons, RangeSlider, ToggleSwitch } from '@/kit'
+import { icons, RangeSlider, ToggleSwitch, useLightGroup } from '@/kit'
 import type { ColorPreset, IconName } from '@/kit/define'
 import ColorPresets from './ColorPresets.vue'
-import { useLightGroup } from './useLightGroup'
 
 // One row of the Lights app: a whole group (its header) or the options of the
 // light picked from the cards. The icon (groups only) and the switch toggle the
@@ -56,10 +55,7 @@ function selectColor(preset: ColorPreset) {
 </script>
 
 <template>
-  <div
-    class="light-row"
-    :class="{ '-on': isOn, '-unavailable': !isAvailable }"
-  >
+  <div class="light-row" :class="{ '-on': isOn, '-unavailable': !isAvailable }">
     <div class="main">
       <button
         v-if="icon"

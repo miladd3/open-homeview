@@ -2,7 +2,7 @@
 import { Lightbulb } from '@lucide/vue'
 import { computed } from 'vue'
 
-import { useLightGroup } from './useLightGroup'
+import { useLightGroup } from '@/kit'
 
 // One light in a group's row of cards. Tapping the icon toggles the light;
 // tapping the name opens its options under the row.

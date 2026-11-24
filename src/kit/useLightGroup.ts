@@ -1,13 +1,7 @@
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 
-import {
-  lightBrightnessPct,
-  lightFeatures,
-  lightRgb,
-  type Rgb,
-  useEntities,
-  useService,
-} from '@/kit'
+import { lightBrightnessPct, lightFeatures, lightRgb, type Rgb } from '@/ha/lightColor'
+import { useEntities, useService } from './app'
 
 /** A set of lights (a group or a single light), controlled as one. */
 export function useLightGroup(lightEntityIds: MaybeRefOrGetter<string[]>) {
