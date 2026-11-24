@@ -1,12 +1,11 @@
-import { entity, seconds } from '@/config/fields'
-import { mockEntity } from '@/ha/mock/entity'
-import { type AppOf, defineAppType } from '../define'
+import { type AppOf, defineAppType, entity, mockEntity, seconds } from '@/kit/define'
 
 /** A live camera, full screen. Usually opened by an event, like a doorbell ring. */
 export const camera = defineAppType({
   type: 'camera',
   description: 'A live camera, full screen.',
-  fullScreen: true,
+  overlay: true,
+  screen: () => import('./CameraOverlay.vue'),
   entities: {
     camera: entity('camera'),
   },

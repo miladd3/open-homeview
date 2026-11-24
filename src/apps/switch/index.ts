@@ -1,6 +1,5 @@
-import { entity, list } from '@/config/fields'
-import { mockEntity } from '@/ha/mock/entity'
-import { type AppOf, defineAppType } from '../define'
+import { onOffStatus } from '@/kit'
+import { type AppOf, defineAppType, entity, list, mockEntity } from '@/kit/define'
 
 /** A big on/off button for any on/off entity, with optional sensor readings. */
 export const switchApp = defineAppType({
@@ -10,6 +9,8 @@ export const switchApp = defineAppType({
     switch: entity(undefined, 'Any on/off entity (switch, input_boolean, fan…).'),
     sensors: list(entity('sensor')),
   },
+  screen: () => import('./SwitchPanel.vue'),
+  status: (app) => onOffStatus(app.entities.switch),
   mock: ({ name, entities: e }) => [
     mockEntity(e.switch, 'on', { friendly_name: name }),
     ...e.sensors.map((id) =>

@@ -2,9 +2,7 @@
 import { BellRing, X } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import IconButton from '@/components/atoms/IconButton.vue'
-import CameraFeed from '@/components/molecules/CameraFeed.vue'
-import ClockDisplay from '@/components/molecules/ClockDisplay.vue'
+import { CameraFeed, ClockDisplay, IconButton } from '@/kit'
 import type { CameraApp } from '.'
 
 // A camera app, full screen over everything. Opens from its icon or from an event

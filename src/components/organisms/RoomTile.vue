@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { RoomConfig } from '@/config/home'
+import type { LightGroup } from '@/apps'
+import { useLightGroup } from '@/apps/lights/useLightGroup'
 import { icons } from '@/config/icons'
-import { useRoomLight } from '@/composables/useRoomLight'
 
-// Apple Home style tile. Tapping the icon toggles the room's lights; tapping
-// anywhere else opens the room dialog.
-const props = defineProps<{ room: RoomConfig }>()
-const emit = defineEmits<{ open: [roomId: string] }>()
+// Apple Home style tile for a Lights group. Tapping the icon toggles its lights;
+// tapping anywhere else opens the Lights app at that group.
+const props = defineProps<{ room: LightGroup }>()
+const emit = defineEmits<{ open: [groupId: string] }>()
 
-const { isOn, isAvailable, brightness, rgb, toggle } = useRoomLight(() => props.room)
+const { isOn, isAvailable, brightness, rgb, toggle } = useLightGroup(
+  () => props.room.lightEntityIds,
+)
 
 const status = computed(() => {
   if (!isAvailable.value) return 'Unavailable'

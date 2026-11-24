@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ColorPreset } from '@/config/home'
-import { kelvinToRgb } from '@/ha/lightColor'
+import { kelvinToRgb } from '@/kit'
+import type { ColorPreset } from '@/kit/define'
 
 defineProps<{ presets: ColorPreset[] }>()
 const emit = defineEmits<{ select: [preset: ColorPreset] }>()

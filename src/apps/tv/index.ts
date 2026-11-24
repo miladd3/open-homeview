@@ -1,6 +1,5 @@
-import { entity, optional } from '@/config/fields'
-import { mockEntity } from '@/ha/mock/entity'
-import { type AppOf, defineAppType } from '../define'
+import { onOffStatus } from '@/kit'
+import { type AppOf, defineAppType, entity, mockEntity, optional } from '@/kit/define'
 
 /** A TV remote: power, volume, and a d-pad when there is a remote entity. */
 export const tv = defineAppType({
@@ -10,6 +9,8 @@ export const tv = defineAppType({
     player: entity('media_player'),
     remote: optional(entity('remote')),
   },
+  screen: () => import('./TvPanel.vue'),
+  status: (app) => onOffStatus(app.entities.player),
   mock: ({ name, entities: e }) => [
     mockEntity(e.player, 'off', {
       friendly_name: name,

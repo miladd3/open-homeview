@@ -42,31 +42,31 @@ Images are built for `amd64` and `arm64`. Tags: `latest` (main branch), and `x.y
 
 ## Screens
 
-| Screen      | What it does                                                                                                                             |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Home        | Clock, weather, status chips (lights on, vacuum, TV…), room tiles and app icons.                                                         |
-| Room dialog | Tap a room tile. On/off switch, brightness slider, color swatches, scenes, and per-light switches for rooms with more lights.            |
-| App dialogs | Tap an app icon (or its status chip): robot vacuum, TV remote, or any on/off entity with sensors (AdGuard).                              |
-| Lights app  | Every light on its own, by group (left). Tap a bulb to toggle it, or the tile for brightness and color. Also opens from the Lights chip. |
-| Camera      | Full-screen camera. Opens from its app icon or from an event (a doorbell ring, over everything); closes after 60 s without a touch.      |
-| Screensaver | After 60 s idle: big clock + weather, dimmed 22:00–07:00, small pixel shift against burn-in.                                             |
+| Screen      | What it does                                                                                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Home        | Clock, weather, status chips (lights on, vacuum, TV…), room tiles and app icons.                                                    |
+| Apps        | Tap an app icon (or its status chip). Every app opens full screen; ✕ or Esc closes it: robot vacuum, TV remote, any on/off entity…  |
+| Lights app  | One section per group (room): its switch and brightness, its scenes, then each light. Tap a light's icon for its color swatches.    |
+| Camera      | Full-screen camera. Opens from its app icon or from an event (a doorbell ring, over everything); closes after 60 s without a touch. |
+| Screensaver | After 60 s idle: big clock + weather, dimmed 22:00–07:00, small pixel shift against burn-in.                                        |
 
-Tapping the **icon** on a room tile toggles that room's lights without opening the dialog.
+The room tiles are the Lights app's groups. Tapping a tile opens the Lights app scrolled to that room; tapping its **icon** toggles the room's lights.
 
 ## Configuration: `kiosk.yaml`
 
-Rooms, scenes, apps, events, weather, color swatches, wallpaper and timings all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
+Apps, rooms, scenes, events, weather, color swatches, wallpaper and timings all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
 
 - In Docker it is mounted at `/config/kiosk.yaml`. Until it exists, the kiosk shows the example, with a **kiosk.yaml** chip on the Home screen explaining what to do.
 - The kiosk checks it every minute and **reloads itself when it changes**, so you never have to touch the screen. Edit the file and the wall screen updates within a minute.
-- A broken edit is never applied: a running kiosk keeps its last good config (the error is in the browser console), and a fresh start shows an error screen naming every bad key, with a suggestion for typos (e.g. `rooms[0].scene is not a known key. Did you mean "scenes"?`).
+- A broken edit is never applied: a running kiosk keeps its last good config (the error is in the browser console), and a fresh start shows an error screen naming every bad key, with a suggestion for typos (e.g. `apps[0].groups[0].scene is not a known key. Did you mean "scenes"?`).
 - Entity IDs that Home Assistant doesn't know show up in the **kiosk.yaml** chip on the Home screen, instead of silently showing "Unavailable".
 - A scene can be written as just its entity ID: `scenes: [scene.bedroom_read]`. Add `name:` and `colors:` only when you want them.
 - Icons are referenced by name from [`src/config/icons.ts`](src/config/icons.ts). Add a Lucide icon there to make it available.
 - App types: `vacuum`, `tv`, `switch` (any on/off entity plus optional sensors), `lights` and `camera`. Add `hidden: true` to keep an app off the Home screen, so it only opens from an event.
 - `events` open an app on their own, over everything (and out of the screensaver). Each names an `entity` and the app to `open`. An `event.*` entity (a doorbell ring, a button press) fires every time it changes, optionally only for some `eventTypes`. Any other entity fires when it changes `to` a state, e.g. `binary_sensor.driveway_motion` with `to: 'on'`. A `message` shows on the camera view (e.g. "Someone is at the door").
 - An app's entity IDs go right on the app (`camera: camera.front_door`, `player: media_player.tv`).
-- The `lights` app lists `groups`, each with a `name`, an optional `icon` and its `lights`. Groups can be anything (rooms, floors, lamps vs. spots). Leave `groups` out to get one group per room. Room tiles usually point at a whole-room light (e.g. a Hue room), while the Lights app lists the single bulbs.
+- The `lights` app lists `groups` (usually rooms), each with a `name`, an optional `icon`, its `lights` and optional `scenes`. A group's `id` defaults to its name in lower case with dashes (`Living Room` → `living-room`).
+- Older files with a top-level `rooms:` still work: the rooms become the Lights app's groups (a Lights app is added if there is none). If the Lights app has its own `groups`, `rooms:` is ignored. Either way the browser console warns; move the rooms into `groups`.
 
 ### Autocomplete in your editor
 
@@ -127,12 +127,13 @@ src/
   apps/                 # every app type, one folder each (see "App types" below)
   config/               # kiosk.yaml schema + validation (home.ts), shared schema helpers (fields.ts), loader, icons
   ha/                   # HaConnection interface, LiveConnection (home-assistant-js-websocket), mock
-  stores/               # config (parsed kiosk.yaml), entities (HA state), kiosk (dialogs, full-screen apps, screensaver)
-  composables/          # useRoomLight, useConfigReload, useIdle, useEvents, …
+  kit/                  # what app folders may use: AppSheet, controls, useEntity/useService, defineAppType (define.ts)
+  stores/               # config (parsed kiosk.yaml), entities (HA state), kiosk (open app, full-screen apps, screensaver)
+  composables/          # useConfigReload, useIdle, useEvents, …
   components/
     atoms/              # GlassPanel, IconButton, RangeSlider, ProgressBar, ToggleSwitch
-    molecules/          # ModalDialog, AppIcon, StatusChip, ClockDisplay, WeatherSummary, SceneButton, ColorPresets, CameraFeed
-    organisms/          # RoomTile, RoomDialog, LightTile, LightControls, ScreenSaver, DevToolbar, ConfigHelpDialog
+    molecules/          # AppIcon, StatusChip, ClockDisplay, WeatherSummary, CameraFeed
+    organisms/          # RoomTile, ScreenSaver, DevToolbar, ConfigHelpDialog
   views/                # HomeView, ConfigErrorView
   styles/               # design tokens (CSS custom properties) + base reset
 ```
@@ -145,12 +146,12 @@ Every component talks to Home Assistant only through `HaConnection` (`subscribeE
 
 ```
 src/apps/vacuum/
-  index.ts          # defineAppType: the kiosk.yaml keys (entity IDs + settings) and fake entities for dev mode
-  ui.ts             # the screen to open, and the Home screen chip status (optional)
-  VacuumPanel.vue   # the screen
+  index.ts          # defineAppType: the kiosk.yaml keys (entity IDs + settings), the screen,
+                    # the Home screen chip status (optional) and fake entities for dev mode
+  VacuumPanel.vue   # the screen, wrapped in <AppSheet> (full screen, ✕, icon, name, status)
 ```
 
-To add one: copy a small folder like `switch/`, add it to `appTypes` in `src/apps/index.ts` and to the map in [`src/apps/ui.ts`](src/apps/ui.ts). Then run `npm run schema`. The type checker flags anything still missing. `index.ts` files stay free of Vue, so the schema loads without the UI.
+App folders import only from `@/kit` (UI), `@/kit/define` (`index.ts`), `vue`, `@lucide/vue` and their own folder; `npm run lint` enforces it. Talk to Home Assistant with `useEntity` and `useService`. To add one: copy a small folder like `switch/`, and add it to `appTypes` in `src/apps/index.ts`. Then run `npm run schema`. The type checker flags anything still missing. The screen is a lazy import (`screen: () => import('./VacuumPanel.vue')`), so the schema loads without the UI and each screen is its own chunk.
 
 ### Styling conventions
 

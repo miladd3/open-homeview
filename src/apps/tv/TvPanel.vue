@@ -14,46 +14,30 @@ import {
 } from '@lucide/vue'
 import { computed } from 'vue'
 
-import IconButton from '@/components/atoms/IconButton.vue'
-import ModalDialog from '@/components/molecules/ModalDialog.vue'
+import { AppSheet, IconButton, useEntity, useService } from '@/kit'
 import type { TvApp } from '.'
-import { icons } from '@/config/icons'
-import { useEntitiesStore } from '@/stores/entities'
 
 const props = defineProps<{ app: TvApp }>()
 const emit = defineEmits<{ close: [] }>()
 
-const store = useEntitiesStore()
+const callService = useService()
 
-const tv = computed(() => store.get(props.app.entities.player))
+const tv = useEntity(() => props.app.entities.player)
 const isOn = computed(() => tv.value?.state === 'on')
 const isMuted = computed(() => Boolean(tv.value?.attributes.is_volume_muted))
 const volume = computed(() => Math.round(Number(tv.value?.attributes.volume_level ?? 0) * 100))
 const status = computed(() => (isOn.value ? `On · Volume ${volume.value}` : 'Off'))
 
 const player = (service: string, data: Record<string, unknown> = {}) =>
-  store.callService('media_player', service, data, { entity_id: props.app.entities.player })
+  callService('media_player', service, data, { entity_id: props.app.entities.player })
 
 // Android TV Remote key names.
 const send = (command: string) =>
-  store.callService(
-    'remote',
-    'send_command',
-    { command },
-    { entity_id: props.app.entities.remote! },
-  )
+  callService('remote', 'send_command', { command }, { entity_id: props.app.entities.remote! })
 </script>
 
 <template>
-  <ModalDialog
-    class="tv-panel"
-    size="compact"
-    :title="app.name"
-    :status="status"
-    :icon="icons[app.icon]"
-    :colors="app.colors"
-    @close="emit('close')"
-  >
+  <AppSheet class="tv-panel" :app="app" :status="status" @close="emit('close')">
     <template #actions>
       <IconButton
         :active="isOn"
@@ -67,17 +51,17 @@ const send = (command: string) =>
     <div class="remote" :class="{ '-disabled': !isOn }">
       <div v-if="app.entities.remote" class="dpad">
         <button class="key -up" type="button" aria-label="Up" @click="send('DPAD_UP')">
-          <ChevronUp :size="36" />
+          <ChevronUp :size="44" />
         </button>
         <button class="key -left" type="button" aria-label="Left" @click="send('DPAD_LEFT')">
-          <ChevronLeft :size="36" />
+          <ChevronLeft :size="44" />
         </button>
         <button class="key -ok" type="button" @click="send('DPAD_CENTER')">OK</button>
         <button class="key -right" type="button" aria-label="Right" @click="send('DPAD_RIGHT')">
-          <ChevronRight :size="36" />
+          <ChevronRight :size="44" />
         </button>
         <button class="key -down" type="button" aria-label="Down" @click="send('DPAD_DOWN')">
-          <ChevronDown :size="36" />
+          <ChevronDown :size="44" />
         </button>
       </div>
 
@@ -113,16 +97,17 @@ const send = (command: string) =>
         </div>
       </div>
     </div>
-  </ModalDialog>
+  </AppSheet>
 </template>
 
 <style scoped lang="scss">
 .tv-panel {
   .remote {
     display: flex;
+    flex: 1;
     align-items: center;
     justify-content: center;
-    gap: var(--space-xl);
+    gap: calc(var(--space-xl) * 2);
     transition: opacity var(--duration-base) ease;
 
     &.-disabled {
@@ -137,8 +122,8 @@ const send = (command: string) =>
       '. up .'
       'left ok right'
       '. down .';
-    grid-template-columns: repeat(3, 96px);
-    grid-template-rows: repeat(3, 96px);
+    grid-template-columns: repeat(3, 128px);
+    grid-template-rows: repeat(3, 128px);
     gap: var(--space-xs);
     padding: var(--space-s);
     border-radius: var(--radius-pill);
@@ -191,7 +176,7 @@ const send = (command: string) =>
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: var(--space-m);
+    gap: var(--space-l);
   }
 
   .remote > .side > .row {
@@ -216,8 +201,8 @@ const send = (command: string) =>
   }
 
   .remote > .side .key {
-    width: 72px;
-    height: 72px;
+    width: 88px;
+    height: 88px;
   }
 }
 </style>

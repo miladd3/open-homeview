@@ -29,18 +29,18 @@ function start(config = testConfig) {
 describe('events', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('a doorbell ring opens the camera over the screensaver and dialogs', async () => {
+  it('a doorbell ring opens the camera over the screensaver and apps', async () => {
     const { mock, kiosk, fired, scope } = start()
-    kiosk.openRoom('bedroom')
+    kiosk.openApp('lights')
     kiosk.sleep()
 
     mock.fireEvent(testConfig.events[0]!)
     await nextTick()
 
     expect(fired).toEqual(['event.front_door_doorbell'])
-    expect(kiosk.fullScreen).toEqual({ appId: 'front-door', message: 'Someone is at the door' })
+    expect(kiosk.overlay).toEqual({ appId: 'front-door', message: 'Someone is at the door' })
     expect(kiosk.screensaver).toBe(false)
-    expect(kiosk.activeRoomId).toBeNull()
+    expect(kiosk.activeAppId).toBeNull()
 
     // The screensaver waits while the camera is open.
     kiosk.sleep()
@@ -57,7 +57,7 @@ describe('events', () => {
     scope.stop()
   })
 
-  it('a state event fires when the entity changes to `to`, and opens a dialog app', async () => {
+  it('a state event fires when the entity changes to `to`, and opens a sheet app', async () => {
     const config = parseHomeConfig({
       apps: [
         {
@@ -77,7 +77,7 @@ describe('events', () => {
 
     expect(fired).toEqual(['binary_sensor.motion'])
     expect(kiosk.activeAppId).toBe('adguard')
-    expect(kiosk.fullScreen).toBeNull()
+    expect(kiosk.overlay).toBeNull()
     expect(kiosk.screensaver).toBe(false)
     scope.stop()
   })

@@ -10,7 +10,14 @@ import { configEntityIds, useMissingEntities } from '../useMissingEntities'
 
 const config = parseHomeConfig({
   weather: 'weather.home',
-  rooms: [{ id: 'den', name: 'Den', lights: ['light.den'], scenes: ['scene.den_movie'] }],
+  apps: [
+    {
+      id: 'lights',
+      type: 'lights',
+      name: 'Lights',
+      groups: [{ name: 'Den', lights: ['light.den'], scenes: ['scene.den_movie'] }],
+    },
+  ],
 })
 
 describe('useMissingEntities', () => {

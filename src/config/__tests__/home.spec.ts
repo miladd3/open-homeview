@@ -1,15 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { testConfig } from '@/__tests__/testConfig'
+import type { LightsApp } from '@/apps'
 import { ConfigError, parseHomeConfig } from '../home'
 
 const room = { id: 'den', name: 'Den', lights: ['light.den'] }
+/** A config with one Lights app holding these groups. */
+const withGroups = (...groups: unknown[]) => ({
+  apps: [{ id: 'lights', type: 'lights', name: 'Lights', groups }],
+})
+const lightsOf = (config: ReturnType<typeof parseHomeConfig>) =>
+  config.apps.find((app): app is LightsApp => app.type === 'lights')!
 const camera = { id: 'door', name: 'Door', type: 'camera', camera: 'camera.door' }
 
 describe('parseHomeConfig', () => {
   it('parses the shipped kiosk.yaml', () => {
-    expect(testConfig.rooms.map((r) => r.id)).toEqual(['living-room', 'bedroom', 'office'])
-    expect(testConfig.rooms[0]!.lightEntityIds).toEqual(['light.living_room'])
+    expect(lightsOf(testConfig).groups.map((g) => g.id)).toEqual([
+      'living-room',
+      'bedroom',
+      'office',
+    ])
+    expect(lightsOf(testConfig).groups[0]!.scenes).toHaveLength(4)
     expect(testConfig.apps.map((a) => a.type)).toEqual([
       'lights',
       'vacuum',
@@ -31,57 +42,57 @@ describe('parseHomeConfig', () => {
 
   it('fills in defaults for an empty file', () => {
     const config = parseHomeConfig(null)
-    expect(config.rooms).toEqual([])
-    expect(config.colors.length).toBeGreaterThan(0)
+    expect(config.apps).toEqual([])
     expect(config.nightHours).toEqual({ from: 22, to: 7 })
     expect(config.graphics).toBe('full')
     expect(config.timings.configCheckMs).toBe(60_000)
   })
 
-  it('defaults scene colors and the room icon', () => {
-    const config = parseHomeConfig({
-      rooms: [{ ...room, scenes: [{ entity: 'scene.den_movie' }] }],
+  it('defaults group ids, icons and scene colors, and hands the lights the swatches', () => {
+    const config = parseHomeConfig(
+      withGroups({ name: 'Living Room', lights: ['light.den'], scenes: [{ entity: 'scene.x' }] }),
+    )
+    const group = lightsOf(config).groups[0]!
+    expect(group).toMatchObject({
+      id: 'living-room',
+      icon: 'lightbulb',
+      lightEntityIds: ['light.den'],
     })
-    expect(config.rooms[0]!.icon).toBe('house')
-    expect(config.rooms[0]!.scenes[0]!.colors).toHaveLength(2)
+    expect(group.scenes[0]!.colors).toHaveLength(2)
+    expect(lightsOf(config).colorPresets.length).toBeGreaterThan(0)
   })
 
-  it('groups a lights app by room when it has no groups', () => {
-    const config = parseHomeConfig({
-      rooms: [{ ...room, icon: 'sofa' }],
-      apps: [{ id: 'lights', type: 'lights', name: 'Lights' }],
-    })
-    expect(config.apps[0]).toMatchObject({
-      type: 'lights',
-      groups: [{ name: 'Den', icon: 'sofa', lightEntityIds: ['light.den'] }],
-    })
-  })
+  it('still reads old `rooms:` as the Lights groups, with a warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const rooms = [{ ...room, icon: 'sofa', scenes: ['scene.den_movie'] }]
 
-  it('reads lights app groups and defaults their icon', () => {
-    const config = parseHomeConfig({
-      apps: [
-        {
-          id: 'lights',
-          type: 'lights',
-          name: 'Lights',
-          groups: [{ name: 'Spots', lights: ['light.spot_1', 'light.spot_2'] }],
-        },
-      ],
+    // No Lights app: one is added.
+    expect(lightsOf(parseHomeConfig({ rooms }))).toMatchObject({
+      id: 'lights',
+      groups: [{ id: 'den', icon: 'sofa', scenes: [{ entityId: 'scene.den_movie' }] }],
     })
-    expect(config.apps[0]).toMatchObject({
-      groups: [
-        { name: 'Spots', icon: 'lightbulb', lightEntityIds: ['light.spot_1', 'light.spot_2'] },
-      ],
-    })
+    // A Lights app without groups gets the rooms.
+    const config = parseHomeConfig({ rooms, apps: [{ id: 'l', type: 'lights', name: 'L' }] })
+    expect(config.apps).toHaveLength(1)
+    expect(lightsOf(config).groups[0]!.name).toBe('Den')
+    // Its own groups win.
+    expect(
+      lightsOf(
+        parseHomeConfig({ rooms, ...withGroups({ name: 'Hall', lights: ['light.hall'] }) }),
+      ).groups.map((g) => g.id),
+    ).toEqual(['hall'])
+
+    expect(warn).toHaveBeenCalledTimes(3)
+    warn.mockRestore()
   })
 
   it('accepts a scene as just its entity ID, and empty keys as not set', () => {
     const config = parseHomeConfig({
       weather: null,
-      rooms: [{ ...room, scenes: ['scene.den_movie'] }],
+      ...withGroups({ ...room, scenes: ['scene.den_movie'] }),
       events: null,
     })
-    expect(config.rooms[0]!.scenes[0]).toMatchObject({ entityId: 'scene.den_movie' })
+    expect(lightsOf(config).groups[0]!.scenes[0]).toMatchObject({ entityId: 'scene.den_movie' })
     expect(config.weatherEntityId).toBeUndefined()
     expect(config.events).toEqual([])
   })
@@ -115,25 +126,21 @@ describe('parseHomeConfig', () => {
 
   it('lists every problem, not just the first', () => {
     expect(() =>
-      parseHomeConfig({ graphics: 'ultra', rooms: [{ ...room, icon: 'unicorn' }] }),
-    ).toThrow(/graphics must be one of: full, lite\nrooms\[0\]\.icon "unicorn"/)
+      parseHomeConfig({ graphics: 'ultra', ...withGroups({ ...room, icon: 'unicorn' }) }),
+    ).toThrow(/graphics must be one of: full, lite\napps\[0\]\.groups\[0\]\.icon "unicorn"/)
   })
 
   it.each([
     [
-      { rooms: [{ ...room, lights: ['switch.den'] }] },
-      'rooms[0].lights[0] "switch.den" must be a light.* entity',
+      withGroups({ ...room, lights: ['switch.den'] }),
+      'apps[0].groups[0].lights[0] "switch.den" must be a light.* entity',
     ],
-    [{ rooms: [{ ...room, icon: 'unicorn' }] }, 'rooms[0].icon "unicorn" is not a known icon'],
-    [{ rooms: [{ ...room, lights: [] }] }, 'rooms[0].lights needs at least one light'],
-    [{ rooms: [room, room] }, 'rooms[1].id "den" is used twice'],
-    [
-      {
-        apps: [{ id: 'l', type: 'lights', name: 'L', groups: [{ name: 'G', lights: ['fan.x'] }] }],
-      },
-      'apps[0].groups[0].lights[0] "fan.x" must be a light.* entity',
-    ],
-    [{ apps: [{ id: 'l', type: 'lights', name: 'L' }] }, 'apps[0].groups needs at least one group'],
+    [withGroups({ ...room, icon: 'unicorn' }), 'apps[0].groups[0].icon "unicorn" is not a known'],
+    [withGroups({ ...room, lights: [] }), 'apps[0].groups[0].lights needs at least one light'],
+    [withGroups(room, room), 'apps[0].groups[1].id "den" is used twice'],
+    [withGroups(room, { name: 'den', lights: ['light.x'] }), 'groups[1].id "den" is used twice'],
+    [{ apps: [{ id: 'l', type: 'lights', name: 'L' }] }, 'apps[0].groups is required'],
+    [withGroups(), 'apps[0].groups needs at least one group'],
     [{ apps: [{ id: 'x', name: 'X', type: 'radio' }] }, 'apps[0].type must be one of'],
     [{ apps: [{ ...camera, camera: undefined }] }, 'apps[0].camera is required'],
     [
@@ -168,22 +175,25 @@ describe('parseHomeConfig', () => {
     [{ colors: [{ name: 'Odd', rgb: [1, 2] }] }, 'colors[0].rgb must be [r, g, b]'],
     [{ colors: [{ name: 'None' }] }, 'colors[0] needs kelvin: 2700 or rgb: [r, g, b]'],
     [
-      { rooms: [{ ...room, scene: [] }] },
-      'rooms[0].scene is not a known key. Did you mean "scenes"?',
+      withGroups({ ...room, scene: [] }),
+      'apps[0].groups[0].scene is not a known key. Did you mean "scenes"?',
     ],
     [{ wallpapr: ['#000', '#fff'] }, 'wallpapr is not a known key. Did you mean "wallpaper"?'],
-    [{ rooms: [{ ...room, icon: 'sofaa' }] }, '"sofaa" is not a known icon. Did you mean "sofa"?'],
+    [withGroups({ ...room, icon: 'sofaa' }), '"sofaa" is not a known icon. Did you mean "sofa"?'],
     [{ apps: [{ id: 'v', name: 'V', type: 'vacum' }] }, 'Did you mean "vacuum"?'],
     [
-      { rooms: [{ ...room, scenes: ['light.den'] }] },
-      'rooms[0].scenes[0] "light.den" must be a scene.* entity',
+      withGroups({ ...room, scenes: ['light.den'] }),
+      'apps[0].groups[0].scenes[0] "light.den" must be a scene.* entity',
     ],
     [
-      { rooms: [{ ...room, scenes: [{ entity: 'scene.x', colour: [] }] }] },
-      'rooms[0].scenes[0].colour is not a known key. Did you mean "colors"?',
+      withGroups({ ...room, scenes: [{ entity: 'scene.x', colour: [] }] }),
+      'apps[0].groups[0].scenes[0].colour is not a known key. Did you mean "colors"?',
     ],
-    [{ rooms: [{ id: 'den', lights: ['light.den'] }] }, 'rooms[0].name is required'],
-    [{ rooms: { den: {} } }, 'rooms must be a list'],
+    [withGroups({ id: 'den', lights: ['light.den'] }), 'apps[0].groups[0].name is required'],
+    [
+      { apps: [{ id: 'l', type: 'lights', name: 'L', groups: {} }] },
+      'apps[0].groups must be a list',
+    ],
     [{ timings: { screensaverSeconds: 'soon' } }, 'timings.screensaverSeconds must be a number'],
     [{ graphics: 'ultra' }, 'graphics must be one of: full, lite'],
   ])('points at the broken key in %j', (raw, message) => {

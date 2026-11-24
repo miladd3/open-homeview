@@ -8,8 +8,7 @@ import StatusChip from '@/components/molecules/StatusChip.vue'
 import WeatherSummary from '@/components/molecules/WeatherSummary.vue'
 import ConfigHelpDialog from '@/components/organisms/ConfigHelpDialog.vue'
 import RoomTile from '@/components/organisms/RoomTile.vue'
-import type { AppConfig } from '@/apps'
-import { uiOf } from '@/apps/ui'
+import { type AppConfig, statusOf } from '@/apps'
 import { icons } from '@/config/icons'
 import { useMissingEntities } from '@/composables/useMissingEntities'
 import { useWeather } from '@/composables/useWeather'
@@ -28,22 +27,17 @@ const configNotice = computed(() => {
   return missing.value.length ? `${missing.value.length} not found` : null
 })
 
-// With a Lights app, count its individual lights and open it from the chip.
+// The Lights app's groups are the rooms. Its chip counts the lights and opens it.
 const lightsApp = config.home.apps.find((app) => app.type === 'lights')
-const countedLights = [
-  ...new Set(
-    lightsApp
-      ? lightsApp.groups.flatMap((group) => group.lightEntityIds)
-      : config.home.rooms.flatMap((room) => room.lightEntityIds),
-  ),
-]
+const rooms = lightsApp?.groups ?? []
+const countedLights = [...new Set(rooms.flatMap((room) => room.lightEntityIds))]
 const lightsOn = computed(() => countedLights.filter((id) => store.get(id)?.state === 'on').length)
 // The config never changes while mounted (an edit reloads the page).
 // Hidden apps only open from events, so they get no icon or chip.
 const shownApps = config.home.apps.filter((app) => !app.hidden)
 const appChips = shownApps.map((app) => ({
   app,
-  status: uiOf(app).status?.(app) ?? computed(() => null),
+  status: statusOf(app) ?? computed(() => null),
 }))
 
 function openApp(app: AppConfig) {
@@ -111,14 +105,14 @@ function openApp(app: AppConfig) {
     </nav>
 
     <div class="sections">
-      <section v-if="config.home.rooms.length" class="section" aria-labelledby="rooms-heading">
+      <section v-if="lightsApp" class="section" aria-labelledby="rooms-heading">
         <h2 id="rooms-heading" class="heading">Rooms</h2>
         <div class="rooms">
           <RoomTile
-            v-for="room in config.home.rooms"
+            v-for="room in rooms"
             :key="room.id"
             :room="room"
-            @open="kiosk.openRoom"
+            @open="kiosk.openApp(lightsApp.id, { focus: $event })"
           />
         </div>
       </section>
@@ -138,7 +132,7 @@ function openApp(app: AppConfig) {
       </section>
     </div>
 
-    <Transition name="dialog">
+    <Transition name="sheet">
       <ConfigHelpDialog
         v-if="showConfigHelp"
         :is-example="config.isExample"

@@ -1,202 +1,144 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
-import ToggleSwitch from '@/components/atoms/ToggleSwitch.vue'
-import ModalDialog from '@/components/molecules/ModalDialog.vue'
-import type { LightsApp } from '.'
-import { icons } from '@/config/icons'
-import { useRoomLight } from '@/composables/useRoomLight'
-import { useEntitiesStore } from '@/stores/entities'
-import LightControls from '@/components/organisms/LightControls.vue'
-import LightTile from '@/components/organisms/LightTile.vue'
+import { AppSheet, useEntities, useService } from '@/kit'
+import type { LightsApp, SceneConfig } from '.'
+import LightCard from './LightCard.vue'
+import LightRow from './LightRow.vue'
+import SceneButton from './SceneButton.vue'
 
-// Every light on its own, sorted into the groups from kiosk.yaml. Groups are
-// listed on the left; tap a light's bulb to toggle it, or the tile for its
-// brightness and color.
-const props = defineProps<{ app: LightsApp }>()
+// Every light, one section per group (like the Hue app's rooms): the group's
+// own row, its scenes, then its lights as a row of cards. Tapping a card's
+// name shows that light's options under the row. `focus` scrolls to one group and
+// highlights it for a moment (a room tile opens it that way).
+const props = defineProps<{ app: LightsApp; focus?: string }>()
 const emit = defineEmits<{ close: [] }>()
 
-const store = useEntitiesStore()
-
-const groupIndex = ref(0)
-const selectedLight = ref<string | null>(null)
-const group = computed(() => props.app.groups[groupIndex.value] ?? props.app.groups[0]!)
-const groupLight = useRoomLight(group)
-
-watch(groupIndex, () => (selectedLight.value = null))
-
-const isOn = (id: string) => store.get(id)?.state === 'on'
-const onCount = (ids: string[]) => ids.filter(isOn).length
-
-const allIds = computed(() => [...new Set(props.app.groups.flatMap((g) => g.lightEntityIds))])
+const callService = useService()
+const allLights = useEntities(() => [
+  ...new Set(props.app.groups.flatMap((group) => group.lightEntityIds)),
+])
 const status = computed(() => {
-  const on = onCount(allIds.value)
-  return on ? `${on} of ${allIds.value.length} on` : 'All off'
+  const on = allLights.value.filter((light) => light.state === 'on').length
+  return on ? `${on} of ${allLights.value.length} on` : 'All off'
 })
-const groupStatus = (ids: string[]) => {
-  const on = onCount(ids)
-  return on ? `${on} on` : 'Off'
-}
+const scenes = useEntities(() =>
+  props.app.groups.flatMap((group) => group.scenes.map((scene) => scene.entityId)),
+)
+const sceneName = (scene: SceneConfig) =>
+  scene.name ??
+  String(
+    scenes.value.find((entity) => entity.entity_id === scene.entityId)?.attributes.friendly_name ??
+      scene.entityId,
+  )
+
+// The light whose options show under its group's cards, as `group/light`.
+const selected = ref<string>()
+const select = (key: string) => (selected.value = selected.value === key ? undefined : key)
+
+const sections = useTemplateRef<HTMLElement[]>('sections')
+const highlighted = ref<string>()
+let highlightTimer: ReturnType<typeof setTimeout> | undefined
+
+onMounted(() => {
+  if (!props.focus) return
+  const section = sections.value?.find((el) => el.dataset.group === props.focus)
+  section?.scrollIntoView({ block: 'start' })
+  highlighted.value = props.focus
+  highlightTimer = setTimeout(() => (highlighted.value = undefined), 2000)
+})
+onBeforeUnmount(() => clearTimeout(highlightTimer))
 </script>
 
 <template>
-  <ModalDialog
-    class="lights-panel"
-    :title="app.name"
-    :status="status"
-    :icon="icons[app.icon]"
-    :colors="app.colors"
-    @close="emit('close')"
-  >
-    <div class="layout">
-      <nav class="groups" aria-label="Light groups">
-        <button
-          v-for="(item, i) in app.groups"
-          :key="`${i}-${item.name}`"
-          class="group"
-          :class="{ '-selected': i === groupIndex, '-on': onCount(item.lightEntityIds) > 0 }"
-          type="button"
-          :aria-current="i === groupIndex"
-          @click="groupIndex = i"
-        >
-          <component :is="icons[item.icon]" class="icon" :size="26" :stroke-width="1.8" />
-          <span class="texts">
-            <span class="name">{{ item.name }}</span>
-            <span class="status">{{ groupStatus(item.lightEntityIds) }}</span>
-          </span>
-        </button>
-      </nav>
-
-      <LightControls
-        v-if="selectedLight"
-        class="content"
-        :entity-id="selectedLight"
-        @back="selectedLight = null"
+  <AppSheet class="lights-panel" :app="app" :status="status" @close="emit('close')">
+    <section
+      v-for="group in app.groups"
+      :key="group.id"
+      ref="sections"
+      class="group"
+      :class="{ '-highlighted': highlighted === group.id }"
+      :data-group="group.id"
+    >
+      <LightRow
+        class="header"
+        :light-entity-ids="group.lightEntityIds"
+        :name="group.name"
+        :icon="group.icon"
+        :presets="app.colorPresets"
       />
-      <section v-else class="content">
-        <header class="header">
-          <h3 class="name">{{ group.name }}</h3>
-          <span class="label">All</span>
-          <ToggleSwitch
-            :model-value="groupLight.isOn.value"
-            :disabled="!groupLight.isAvailable.value"
-            :aria-label="
-              groupLight.isOn.value ? `Turn all ${group.name} off` : `Turn all ${group.name} on`
-            "
-            @update:model-value="groupLight.toggle"
-          />
-        </header>
-        <div class="lights">
-          <LightTile
-            v-for="id in group.lightEntityIds"
-            :key="id"
-            :entity-id="id"
-            @open="selectedLight = $event"
-          />
-        </div>
-      </section>
-    </div>
-  </ModalDialog>
+      <div v-if="group.scenes.length" class="scenes">
+        <SceneButton
+          v-for="scene in group.scenes"
+          :key="scene.entityId"
+          :label="sceneName(scene)"
+          :colors="scene.colors"
+          @click="callService('scene', 'turn_on', {}, { entity_id: scene.entityId })"
+        />
+      </div>
+      <div class="lights">
+        <LightCard
+          v-for="id in group.lightEntityIds"
+          :key="id"
+          :entity-id="id"
+          :selected="selected === `${group.id}/${id}`"
+          @select="select(`${group.id}/${id}`)"
+        />
+      </div>
+      <LightRow
+        v-if="selected?.startsWith(`${group.id}/`)"
+        :key="selected"
+        class="options"
+        :light-entity-ids="[selected.slice(group.id.length + 1)]"
+        :presets="app.colorPresets"
+        colors-open
+      />
+    </section>
+  </AppSheet>
 </template>
 
 <style scoped lang="scss">
 .lights-panel {
-  .layout {
-    display: flex;
-    gap: var(--space-l);
-    height: 460px;
-  }
-
-  .layout > .groups {
-    display: flex;
-    flex: 0 0 250px;
-    flex-direction: column;
-    gap: var(--space-xs);
-    overflow-y: auto;
-    scrollbar-width: none;
-  }
-
-  .layout > .groups > .group {
+  .group {
     display: flex;
     flex: none;
-    align-items: center;
-    gap: var(--space-s);
-    min-height: var(--touch-min);
-    padding: var(--space-s) var(--space-m);
-    border: 0;
-    border-radius: var(--radius-m);
-    background: none;
-    color: var(--color-text);
-    text-align: left;
-    cursor: pointer;
-    transition: background-color var(--duration-base) ease;
-
-    &.-selected {
-      background: rgb(255 255 255 / 14%);
-    }
-
-    &.-on > .icon {
-      color: var(--color-on);
-    }
-  }
-
-  .layout > .groups > .group > .icon {
-    flex: none;
-    color: var(--color-text-secondary);
-  }
-
-  .layout > .groups > .group > .texts {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  .layout > .groups > .group > .texts > .name {
-    overflow: hidden;
-    font-size: 20px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .layout > .groups > .group > .texts > .status {
-    color: var(--color-text-secondary);
-    font-size: 16px;
-  }
-
-  .layout > .content {
-    display: flex;
-    flex: 1;
     flex-direction: column;
     gap: var(--space-m);
-    min-width: 0;
+    padding: var(--space-m);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-l);
+    background: rgb(255 255 255 / 6%);
+    transition:
+      background-color var(--duration-slow) ease,
+      border-color var(--duration-slow) ease;
+
+    &.-highlighted {
+      border-color: rgb(255 255 255 / 70%);
+      background: rgb(255 255 255 / 16%);
+    }
   }
 
-  .layout > .content > .header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-s);
-  }
-
-  .layout > .content > .header > .name {
-    flex: 1;
+  .group > .header :deep(.name) {
     font-size: 26px;
     font-weight: 700;
   }
 
-  .layout > .content > .header > .label {
-    color: var(--color-text-secondary);
-    font-size: 18px;
+  .group > .scenes,
+  .group > .lights {
+    display: flex;
+    gap: var(--space-s);
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    > .scene-button {
+      flex: none;
+    }
   }
 
-  .layout > .content > .lights {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    align-content: start;
-    gap: var(--space-s);
-    min-height: 0;
-    overflow-y: auto;
-    scrollbar-width: none;
+  .group > .options {
+    padding: var(--space-m);
+    border-radius: var(--radius-m);
+    background: rgb(255 255 255 / 8%);
   }
 }
 </style>

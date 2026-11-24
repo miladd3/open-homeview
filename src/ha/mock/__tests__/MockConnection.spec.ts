@@ -19,17 +19,17 @@ describe('MockConnection', () => {
   afterEach(() => conn.dispose())
 
   it('emits the initial state on subscribe', () => {
-    expect(latest['light.living_room']?.state).toBe('on')
+    expect(latest['light.living_room_ceiling']?.state).toBe('on')
   })
 
   it('toggles a light and clears its brightness when off', async () => {
-    await conn.callService('light', 'toggle', {}, { entity_id: 'light.living_room' })
-    expect(latest['light.living_room']?.state).toBe('off')
-    expect(latest['light.living_room']?.attributes.brightness).toBeNull()
+    await conn.callService('light', 'toggle', {}, { entity_id: 'light.living_room_ceiling' })
+    expect(latest['light.living_room_ceiling']?.state).toBe('off')
+    expect(latest['light.living_room_ceiling']?.attributes.brightness).toBeNull()
 
-    await conn.callService('light', 'toggle', {}, { entity_id: 'light.living_room' })
-    expect(latest['light.living_room']?.state).toBe('on')
-    expect(latest['light.living_room']?.attributes.brightness).toBe(255)
+    await conn.callService('light', 'toggle', {}, { entity_id: 'light.living_room_ceiling' })
+    expect(latest['light.living_room_ceiling']?.state).toBe('on')
+    expect(latest['light.living_room_ceiling']?.attributes.brightness).toBe(255)
   })
 
   it('sets brightness from a percentage', async () => {
@@ -37,14 +37,14 @@ describe('MockConnection', () => {
       'light',
       'turn_on',
       { brightness_pct: 50 },
-      { entity_id: 'light.bedroom' },
+      { entity_id: 'light.bedroom_ceiling' },
     )
-    expect(latest['light.bedroom']?.attributes.brightness).toBe(128)
+    expect(latest['light.bedroom_ceiling']?.attributes.brightness).toBe(128)
   })
 
-  it('applies a scene to its room light', async () => {
+  it('applies a scene to the lights of its group', async () => {
     await conn.callService('scene', 'turn_on', {}, { entity_id: 'scene.living_room_red' })
-    const light = latest['light.living_room']!
+    const light = latest['light.living_room_ceiling']!
     expect(light.attributes.rgb_color).toEqual([255, 77, 77])
     expect(light.attributes.color_mode).toBe('xy')
   })

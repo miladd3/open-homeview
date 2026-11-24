@@ -2,10 +2,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { isFullScreen } from '@/apps'
-import { uiOf } from '@/apps/ui'
+import { isOverlay, screenOf } from '@/apps'
 import DevToolbar from '@/components/organisms/DevToolbar.vue'
-import RoomDialog from '@/components/organisms/RoomDialog.vue'
 import ScreenSaver from '@/components/organisms/ScreenSaver.vue'
 import { useConfigReload } from '@/composables/useConfigReload'
 import { useEvents } from '@/composables/useEvents'
@@ -20,14 +18,13 @@ const config = useConfigStore()
 const kiosk = useKioskStore()
 const mock = useEntitiesStore().mock()
 
-const activeRoom = computed(() => config.home.rooms.find((room) => room.id === kiosk.activeRoomId))
 const activeApp = computed(() => {
   const app = config.home.apps.find((app) => app.id === kiosk.activeAppId)
-  return app && !isFullScreen(app) ? app : undefined
+  return app && !isOverlay(app) ? app : undefined
 })
-const fullScreenApp = computed(() => {
-  const app = config.home.apps.find((app) => app.id === kiosk.fullScreen?.appId)
-  return app && isFullScreen(app) ? app : undefined
+const overlayApp = computed(() => {
+  const app = config.home.apps.find((app) => app.id === kiosk.overlay?.appId)
+  return app && isOverlay(app) ? app : undefined
 })
 const wallpaper = computed(() => ({
   '--wallpaper-from': config.home.wallpaper[0],
@@ -56,16 +53,14 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
       </Transition>
     </RouterView>
 
-    <Transition name="dialog">
-      <RoomDialog v-if="activeRoom" :room="activeRoom" @close="kiosk.closeDialogs" />
-    </Transition>
-
-    <Transition name="dialog">
+    <Transition name="sheet">
       <component
-        :is="uiOf(activeApp).screen"
+        :is="screenOf(activeApp)"
         v-if="activeApp"
+        :key="activeApp.id"
         :app="activeApp"
-        @close="kiosk.closeDialogs"
+        :focus="kiosk.focus"
+        @close="kiosk.closeApp"
       />
     </Transition>
 
@@ -73,14 +68,14 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
       <ScreenSaver v-if="kiosk.screensaver" @wake="kiosk.wake" />
     </Transition>
 
-    <Transition name="full-screen">
+    <Transition name="overlay">
       <component
-        :is="uiOf(fullScreenApp).screen"
-        v-if="fullScreenApp"
-        :key="fullScreenApp.id"
-        :app="fullScreenApp"
-        :message="kiosk.fullScreen?.message"
-        @close="kiosk.closeFullScreen"
+        :is="screenOf(overlayApp)"
+        v-if="overlayApp"
+        :key="overlayApp.id"
+        :app="overlayApp"
+        :message="kiosk.overlay?.message"
+        @close="kiosk.closeOverlay"
       />
     </Transition>
 
@@ -118,19 +113,19 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
 
 // Fading out: let taps through to the screen underneath.
 .page-leave-active,
-.full-screen-leave-active {
+.overlay-leave-active {
   pointer-events: none;
 }
 
-.full-screen-enter-active,
-.full-screen-leave-active {
+.overlay-enter-active,
+.overlay-leave-active {
   transition:
     opacity var(--duration-base) ease,
     transform var(--duration-slow) var(--ease-spring);
 }
 
-.full-screen-enter-from,
-.full-screen-leave-to {
+.overlay-enter-from,
+.overlay-leave-to {
   opacity: 0;
   transform: scale(1.04);
 }

@@ -47,161 +47,6 @@
         }
       ]
     },
-    "rooms": {
-      "description": "Room tiles on the Home screen.",
-      "anyOf": [
-        {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Unique ID, e.g. living-room."
-              },
-              "name": {
-                "type": "string",
-                "minLength": 1
-              },
-              "icon": {
-                "default": "house",
-                "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
-                "type": "string",
-                "enum": [
-                  "armchair",
-                  "baby",
-                  "bath",
-                  "bed",
-                  "bed-single",
-                  "bell",
-                  "book",
-                  "bot",
-                  "briefcase",
-                  "car",
-                  "cctv",
-                  "coffee",
-                  "cooking-pot",
-                  "door",
-                  "dumbbell",
-                  "fan",
-                  "flower",
-                  "gamepad",
-                  "house",
-                  "lamp",
-                  "lamp-desk",
-                  "laptop",
-                  "lightbulb",
-                  "monitor",
-                  "music",
-                  "plug",
-                  "shield",
-                  "shield-check",
-                  "shower",
-                  "sofa",
-                  "speaker",
-                  "thermometer",
-                  "trees",
-                  "tv",
-                  "utensils",
-                  "washing-machine"
-                ]
-              },
-              "lights": {
-                "minItems": 1,
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "pattern": "^light\\.[a-z0-9_]+$",
-                  "x-entity-domain": "light",
-                  "description": "A light.* entity ID from Home Assistant."
-                },
-                "description": "The lights this room tile switches. A whole-room group light works best."
-              },
-              "scenes": {
-                "anyOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "pattern": "^scene\\.[a-z0-9_]+$",
-                          "x-entity-domain": "scene",
-                          "description": "A scene. Shorthand for { entity: scene.x }."
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "entity": {
-                              "type": "string",
-                              "pattern": "^scene\\.[a-z0-9_]+$",
-                              "x-entity-domain": "scene",
-                              "description": "A scene.* entity ID from Home Assistant."
-                            },
-                            "name": {
-                              "description": "Defaults to the scene's name in Home Assistant.",
-                              "anyOf": [
-                                {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "colors": {
-                              "default": [
-                                "#ffd27a",
-                                "#ff9f0a"
-                              ],
-                              "description": "Two colors for a gradient: [from, to].",
-                              "type": "array",
-                              "prefixItems": [
-                                {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "description": "Any CSS color, e.g. \"#ff9f0a\"."
-                                },
-                                {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "description": "Any CSS color, e.g. \"#ff9f0a\"."
-                                }
-                              ],
-                              "items": false,
-                              "minItems": 2,
-                              "maxItems": 2
-                            }
-                          },
-                          "required": [
-                            "entity"
-                          ],
-                          "additionalProperties": false
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "name",
-              "lights"
-            ],
-            "additionalProperties": false
-          }
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "apps": {
       "description": "App icons on the Home screen.",
       "anyOf": [
@@ -242,6 +87,7 @@
                       "door",
                       "dumbbell",
                       "fan",
+                      "file-cog",
                       "flower",
                       "gamepad",
                       "house",
@@ -410,6 +256,7 @@
                       "door",
                       "dumbbell",
                       "fan",
+                      "file-cog",
                       "flower",
                       "gamepad",
                       "house",
@@ -526,6 +373,7 @@
                       "door",
                       "dumbbell",
                       "fan",
+                      "file-cog",
                       "flower",
                       "gamepad",
                       "house",
@@ -645,6 +493,7 @@
                       "door",
                       "dumbbell",
                       "fan",
+                      "file-cog",
                       "flower",
                       "gamepad",
                       "house",
@@ -698,92 +547,169 @@
                   "type": {
                     "type": "string",
                     "const": "lights",
-                    "description": "Every light on its own, sorted into groups."
+                    "description": "Every light on its own, sorted into groups (usually rooms) with their scenes."
                   },
                   "groups": {
-                    "description": "Sections of the app. Leave out for one group per room.",
-                    "anyOf": [
-                      {
-                        "minItems": 1,
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "name": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "description": "Unique ID, e.g. living-room. Defaults to the name in lower case with dashes.",
+                          "anyOf": [
+                            {
                               "type": "string",
                               "minLength": 1
                             },
-                            "icon": {
-                              "default": "lightbulb",
-                              "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
-                              "type": "string",
-                              "enum": [
-                                "armchair",
-                                "baby",
-                                "bath",
-                                "bed",
-                                "bed-single",
-                                "bell",
-                                "book",
-                                "bot",
-                                "briefcase",
-                                "car",
-                                "cctv",
-                                "coffee",
-                                "cooking-pot",
-                                "door",
-                                "dumbbell",
-                                "fan",
-                                "flower",
-                                "gamepad",
-                                "house",
-                                "lamp",
-                                "lamp-desk",
-                                "laptop",
-                                "lightbulb",
-                                "monitor",
-                                "music",
-                                "plug",
-                                "shield",
-                                "shield-check",
-                                "shower",
-                                "sofa",
-                                "speaker",
-                                "thermometer",
-                                "trees",
-                                "tv",
-                                "utensils",
-                                "washing-machine"
-                              ]
-                            },
-                            "lights": {
-                              "minItems": 1,
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "icon": {
+                          "default": "lightbulb",
+                          "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                          "type": "string",
+                          "enum": [
+                            "armchair",
+                            "baby",
+                            "bath",
+                            "bed",
+                            "bed-single",
+                            "bell",
+                            "book",
+                            "bot",
+                            "briefcase",
+                            "car",
+                            "cctv",
+                            "coffee",
+                            "cooking-pot",
+                            "door",
+                            "dumbbell",
+                            "fan",
+                            "file-cog",
+                            "flower",
+                            "gamepad",
+                            "house",
+                            "lamp",
+                            "lamp-desk",
+                            "laptop",
+                            "lightbulb",
+                            "monitor",
+                            "music",
+                            "plug",
+                            "shield",
+                            "shield-check",
+                            "shower",
+                            "sofa",
+                            "speaker",
+                            "thermometer",
+                            "trees",
+                            "tv",
+                            "utensils",
+                            "washing-machine"
+                          ]
+                        },
+                        "lights": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^light\\.[a-z0-9_]+$",
+                            "x-entity-domain": "light",
+                            "description": "A light.* entity ID from Home Assistant."
+                          }
+                        },
+                        "scenes": {
+                          "anyOf": [
+                            {
                               "type": "array",
                               "items": {
-                                "type": "string",
-                                "pattern": "^light\\.[a-z0-9_]+$",
-                                "x-entity-domain": "light",
-                                "description": "A light.* entity ID from Home Assistant."
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^scene\\.[a-z0-9_]+$",
+                                    "x-entity-domain": "scene",
+                                    "description": "A scene. Shorthand for { entity: scene.x }."
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "entity": {
+                                        "type": "string",
+                                        "pattern": "^scene\\.[a-z0-9_]+$",
+                                        "x-entity-domain": "scene",
+                                        "description": "A scene.* entity ID from Home Assistant."
+                                      },
+                                      "name": {
+                                        "description": "Defaults to the scene's name in Home Assistant.",
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "colors": {
+                                        "default": [
+                                          "#ffd27a",
+                                          "#ff9f0a"
+                                        ],
+                                        "description": "Two colors for a gradient: [from, to].",
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                                          },
+                                          {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                                          }
+                                        ],
+                                        "items": false,
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      }
+                                    },
+                                    "required": [
+                                      "entity"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
                               }
+                            },
+                            {
+                              "type": "null"
                             }
-                          },
-                          "required": [
-                            "name",
-                            "lights"
-                          ],
-                          "additionalProperties": false
+                          ]
                         }
                       },
-                      {
-                        "type": "null"
-                      }
-                    ]
+                      "required": [
+                        "name",
+                        "lights"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "Sections of the app, e.g. one per room."
                   }
                 },
                 "required": [
                   "id",
                   "name",
-                  "type"
+                  "type",
+                  "groups"
                 ],
                 "additionalProperties": false
               },
@@ -820,6 +746,7 @@
                       "door",
                       "dumbbell",
                       "fan",
+                      "file-cog",
                       "flower",
                       "gamepad",
                       "house",

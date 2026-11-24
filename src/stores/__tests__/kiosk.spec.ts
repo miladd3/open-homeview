@@ -6,19 +6,19 @@ import { useKioskStore } from '../kiosk'
 describe('kiosk store', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('shows one dialog at a time', () => {
+  it('opens an app with the part to focus, and forgets it on close', () => {
     const kiosk = useKioskStore()
-    kiosk.openRoom('bedroom')
-    kiosk.openApp('vacuum')
-    expect(kiosk.activeRoomId).toBeNull()
-    expect(kiosk.activeAppId).toBe('vacuum')
+    kiosk.openApp('lights', { focus: 'bedroom' })
+    expect(kiosk.activeAppId).toBe('lights')
+    expect(kiosk.focus).toBe('bedroom')
 
-    kiosk.openRoom('office')
+    kiosk.openApp('vacuum')
+    expect(kiosk.focus).toBeUndefined()
+    kiosk.closeApp()
     expect(kiosk.activeAppId).toBeNull()
-    expect(kiosk.activeRoomId).toBe('office')
   })
 
-  it('closes dialogs when the screensaver starts', () => {
+  it('closes the app when the screensaver starts', () => {
     const kiosk = useKioskStore()
     kiosk.openApp('tv')
     kiosk.sleep()

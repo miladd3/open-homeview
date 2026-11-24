@@ -5,7 +5,7 @@
 # Copy this file to kiosk.yaml and replace the entity IDs with your own (find
 # them in Home Assistant under Settings → Devices & services → Entities).
 #
-# Everything the wall screen shows lives here: rooms, scenes, apps and the
+# Everything the wall screen shows lives here: apps, rooms, scenes and the
 # Home Assistant entity IDs behind them. The kiosk checks this file every
 # minute and reloads itself when it changes. No restart or rebuild needed.
 #
@@ -21,84 +21,15 @@ graphics: lite
 
 weather: weather.forecast_home
 
-rooms:
-  - id: living-room
-    name: Living Room
-    icon: sofa
-    lights: [light.living_room]
-    scenes:
-      - entity: scene.living_room_rest
-        name: Rest
-        colors: ['#ffb36b', '#ff8a3d']
-      - entity: scene.living_room_city_of_love
-        name: City of Love
-        colors: ['#ff6fb5', '#8a5cff']
-      - entity: scene.living_room_malibu_pink
-        name: Malibu Pink
-        colors: ['#ff9ad5', '#ff5e9c']
-      - entity: scene.living_room_red
-        name: Red
-        colors: ['#ff4d4d', '#c41e3a']
-
-  - id: bedroom
-    name: Bedroom
-    icon: bed
-    lights: [light.bedroom]
-    scenes:
-      - entity: scene.bedroom_cancun
-        name: Cancun
-        colors: ['#ffb347', '#ff5f8f']
-      - entity: scene.bedroom_read
-        name: Read
-        colors: ['#fff4dc', '#ffd89a']
-      - entity: scene.bedroom_rest
-        name: Rest
-        colors: ['#ffb36b', '#ff8a3d']
-      - entity: scene.bedroom_ruby_romance
-        name: Ruby Romance
-        colors: ['#e0115f', '#7a0a3a']
-      - entity: scene.bedroom_relax
-        name: Relax
-        colors: ['#ffd27a', '#ffa94d']
-
-  - id: office
-    name: Office
-    icon: laptop
-    lights: [light.office]
-    scenes:
-      - entity: scene.office_concentrate
-        name: Concentrate
-        colors: ['#f4f8ff', '#bcd6ff']
-      - entity: scene.office_energize
-        name: Energize
-        colors: ['#ffffff', '#9cc8ff']
-      - entity: scene.office_read
-        name: Read
-        colors: ['#fff4dc', '#ffd89a']
-      - entity: scene.office_relax
-        name: Relax
-        colors: ['#ffd27a', '#ffa94d']
-      - entity: scene.office_lily
-        name: Lily
-        colors: ['#ffc2e0', '#c77dff']
-      - entity: scene.office_coastal_nights
-        name: Coastal Nights
-        colors: ['#4fc3f7', '#283593']
-      - entity: scene.office_crazy_mate
-        name: Crazy Mate
-        colors: ['#b4ff5c', '#ff5ec4']
-      - entity: scene.office_nightlight
-        name: Nightlight
-        colors: ['#ff9f43', '#7a3b0c']
-
-# Apps open as a dialog from their icon on the Home screen (cameras open full
-# screen). Add `hidden: true` to leave an app off the Home screen, so it only
+# Apps open full screen from their icon on the Home screen; ✕ or Esc closes
+# them. Add `hidden: true` to leave an app off the Home screen, so it only
 # opens from an event (see `events` below).
 # Types: vacuum, tv, switch (any on/off entity plus optional sensors), lights,
 # camera.
 apps:
-  # Every light on its own, sorted into groups (rooms, floors, lamps vs. spots…).
-  # Leave out `groups` to get one group per room, using the rooms' lights.
+  # Every light on its own, sorted into groups. Groups are the rooms: each is a
+  # room tile on the Home screen and a section of the app, with its scenes.
+  # `id` defaults to the name in lower case with dashes (Living Room → living-room).
   - id: lights
     type: lights
     name: Lights
@@ -112,12 +43,67 @@ apps:
           - light.living_room_floor_lamp
           - light.living_room_spot_1
           - light.living_room_spot_2
+        scenes:
+          - entity: scene.living_room_rest
+            name: Rest
+            colors: ['#ffb36b', '#ff8a3d']
+          - entity: scene.living_room_city_of_love
+            name: City of Love
+            colors: ['#ff6fb5', '#8a5cff']
+          - entity: scene.living_room_malibu_pink
+            name: Malibu Pink
+            colors: ['#ff9ad5', '#ff5e9c']
+          - entity: scene.living_room_red
+            name: Red
+            colors: ['#ff4d4d', '#c41e3a']
       - name: Bedroom
         icon: bed
         lights: [light.bedroom_ceiling, light.bedside_lamp]
-      - name: Office
+        scenes:
+          - entity: scene.bedroom_cancun
+            name: Cancun
+            colors: ['#ffb347', '#ff5f8f']
+          - entity: scene.bedroom_read
+            name: Read
+            colors: ['#fff4dc', '#ffd89a']
+          - entity: scene.bedroom_rest
+            name: Rest
+            colors: ['#ffb36b', '#ff8a3d']
+          - entity: scene.bedroom_ruby_romance
+            name: Ruby Romance
+            colors: ['#e0115f', '#7a0a3a']
+          - entity: scene.bedroom_relax
+            name: Relax
+            colors: ['#ffd27a', '#ffa94d']
+      - id: office
+        name: Office
         icon: laptop
         lights: [light.desk_lamp, light.office_spot_1, light.office_spot_2]
+        scenes:
+          - entity: scene.office_concentrate
+            name: Concentrate
+            colors: ['#f4f8ff', '#bcd6ff']
+          - entity: scene.office_energize
+            name: Energize
+            colors: ['#ffffff', '#9cc8ff']
+          - entity: scene.office_read
+            name: Read
+            colors: ['#fff4dc', '#ffd89a']
+          - entity: scene.office_relax
+            name: Relax
+            colors: ['#ffd27a', '#ffa94d']
+          - entity: scene.office_lily
+            name: Lily
+            colors: ['#ffc2e0', '#c77dff']
+          - entity: scene.office_coastal_nights
+            name: Coastal Nights
+            colors: ['#4fc3f7', '#283593']
+          - entity: scene.office_crazy_mate
+            name: Crazy Mate
+            colors: ['#b4ff5c', '#ff5ec4']
+          - entity: scene.office_nightlight
+            name: Nightlight
+            colors: ['#ff9f43', '#7a3b0c']
 
   - id: vacuum
     type: vacuum
@@ -174,7 +160,7 @@ events:
   #   to: 'on'
   #   open: front-door
 
-# Swatches in the room dialog. Use `kelvin` for whites, `rgb` for colors.
+# Color swatches in the Lights app. Use `kelvin` for whites, `rgb` for colors.
 colors:
   - { name: Warm white, kelvin: 2200 }
   - { name: Soft white, kelvin: 2700 }

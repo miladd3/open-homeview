@@ -1,5 +1,5 @@
 // Typed shape of `kiosk.yaml`, which is fetched at startup. The YAML is the single
-// place to change when rooms, apps or HA entity IDs change; this file only
+// place to change when apps or HA entity IDs change; this file only
 // validates it and fills in defaults.
 //
 // The Zod schema below is the one definition of the file: it checks the YAML at
@@ -15,33 +15,14 @@ import {
   entity,
   type Gradient,
   gradient,
-  icon,
-  lightList,
   list,
   object,
   optional,
   seconds,
   text,
 } from './fields'
-import type { IconName } from './icons'
 
 export type { Gradient } from './fields'
-
-export interface SceneConfig {
-  entityId: string
-  /** Falls back to the scene's friendly name in HA. */
-  name?: string
-  /** Two colors used for the scene button gradient. */
-  colors: Gradient
-}
-
-export interface RoomConfig {
-  id: string
-  name: string
-  icon: IconName
-  lightEntityIds: string[]
-  scenes: SceneConfig[]
-}
 
 export type ColorPreset = { name: string; kelvin: number } | { name: string; rgb: Rgb }
 
@@ -66,10 +47,8 @@ export interface HomeConfig {
   /** `lite` drops live blur and shadows, for weak GPUs like the Pi's. */
   graphics: 'full' | 'lite'
   weatherEntityId?: string
-  rooms: RoomConfig[]
   apps: AppConfig[]
   events: EventConfig[]
-  colors: ColorPreset[]
   timings: {
     screensaverAfterMs: number
     /** How often the kiosk checks kiosk.yaml for changes. */
@@ -88,43 +67,11 @@ const DEFAULT_COLORS: ColorPreset[] = [
   { name: 'Blue', rgb: [10, 132, 255] },
 ]
 
-const DEFAULT_SCENE_COLORS: Gradient = ['#ffd27a', '#ff9f0a']
 export class ConfigError extends Error {
   override name = 'ConfigError'
 }
 
 // ---- the file ----
-
-const scene = z
-  .union([
-    entity('scene', 'A scene. Shorthand for { entity: scene.x }.'),
-    object({
-      entity: entity('scene'),
-      name: optional(text).meta({ description: "Defaults to the scene's name in Home Assistant." }),
-      colors: gradient(DEFAULT_SCENE_COLORS),
-    }),
-  ])
-  .transform((raw): SceneConfig =>
-    typeof raw === 'string'
-      ? { entityId: raw, colors: DEFAULT_SCENE_COLORS }
-      : { entityId: raw.entity, name: raw.name, colors: raw.colors },
-  )
-
-const room = object({
-  id: text.meta({ description: 'Unique ID, e.g. living-room.' }),
-  name: text,
-  icon: icon('house'),
-  lights: lightList.meta({
-    description: 'The lights this room tile switches. A whole-room group light works best.',
-  }),
-  scenes: list(scene),
-}).transform((raw): RoomConfig => ({
-  id: raw.id,
-  name: raw.name,
-  icon: raw.icon,
-  lightEntityIds: raw.lights,
-  scenes: raw.scenes,
-}))
 
 const event = object({
   entity: entity(
@@ -172,7 +119,6 @@ export const kioskYamlSchema = object({
     .default('full')
     .meta({ description: 'lite: no live blur or shadows, for weak GPUs like a Raspberry Pi.' }),
   weather: optional(entity('weather')),
-  rooms: list(room).meta({ description: 'Room tiles on the Home screen.' }),
   apps: list(appSchema).meta({ description: 'App icons on the Home screen.' }),
   events: list(event).meta({
     description:
@@ -191,18 +137,16 @@ export const kioskYamlSchema = object({
     .meta({ description: 'Hours (local time) during which the screensaver is dimmed.' }),
 })
   .superRefine((raw, ctx) => {
-    for (const key of ['rooms', 'apps'] as const) {
-      const seen = new Set<string>()
-      raw[key].forEach((item, i) => {
-        if (seen.has(item.id))
-          ctx.addIssue({
-            code: 'custom',
-            path: [key, i, 'id'],
-            message: `"${item.id}" is used twice`,
-          })
-        seen.add(item.id)
-      })
-    }
+    const seen = new Set<string>()
+    raw.apps.forEach((item, i) => {
+      if (seen.has(item.id))
+        ctx.addIssue({
+          code: 'custom',
+          path: ['apps', i, 'id'],
+          message: `"${item.id}" is used twice`,
+        })
+      seen.add(item.id)
+    })
     const appIds = raw.apps.map((item) => item.id)
     raw.events.forEach((item, i) => {
       if (!appIds.includes(item.appId))
@@ -232,20 +176,12 @@ export const kioskYamlSchema = object({
         })
     })
   })
-  .transform((raw, ctx): HomeConfig => ({
+  .transform((raw): HomeConfig => ({
     wallpaper: raw.wallpaper,
     graphics: raw.graphics,
     weatherEntityId: raw.weather,
-    rooms: raw.rooms,
-    apps: raw.apps.map((item, i) =>
-      finishApp(item, {
-        rooms: raw.rooms,
-        problem: (key, message) =>
-          ctx.addIssue({ code: 'custom', path: ['apps', i, key], message }),
-      }),
-    ),
+    apps: raw.apps.map((item) => finishApp(item, { colors: raw.colors ?? DEFAULT_COLORS })),
     events: raw.events,
-    colors: raw.colors ?? DEFAULT_COLORS,
     timings: {
       screensaverAfterMs: raw.timings.screensaverSeconds * 1000,
       configCheckMs: raw.timings.configCheckSeconds * 1000,
@@ -272,7 +208,7 @@ const TYPE_NAMES: Record<string, string> = {
 function issueText(issue: z.core.$ZodIssue, base: readonly PropertyKey[] = []): string[] {
   const path = [...base, ...issue.path]
   const at = formatPath(path)
-  // Unknown-key messages start with `.key`, so they read `rooms[0].scene is not…`.
+  // Unknown-key messages start with `.key`, so they read `apps[0].nmae is not…`.
   const say = (message: string) =>
     message.startsWith('.')
       ? at
@@ -313,14 +249,55 @@ function issueText(issue: z.core.$ZodIssue, base: readonly PropertyKey[] = []): 
   }
 }
 
-/** Human-readable problems in a config, each naming its key, e.g. `rooms[1].lights[0] …`. */
+/** Human-readable problems in a config, each naming its key, e.g. `apps[1].groups[0] …`. */
 export function configProblems(error: z.ZodError): string[] {
   return error.issues.flatMap((issue) => issueText(issue))
 }
 
+type Raw = Record<string, unknown>
+const isMapping = (value: unknown): value is Raw =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * Old configs had a top-level `rooms:`. Rooms are now the groups of the Lights
+ * app, so they become its `groups` (adding a Lights app if there is none).
+ */
+function migrateRooms(value: unknown): unknown {
+  if (!isMapping(value) || !('rooms' in value)) return value
+  const { rooms, ...rest } = value
+  if (rooms == null || (Array.isArray(rooms) && !rooms.length)) return rest
+  const apps = Array.isArray(rest.apps) ? rest.apps : []
+  const lightsApp = apps.find((app): app is Raw => isMapping(app) && app.type === 'lights')
+  if (lightsApp?.groups != null) {
+    console.warn(
+      '[config] kiosk.yaml has `rooms:` and a Lights app with `groups:`, so `rooms:` is ignored. Move each room (with its scenes) into `groups:`.',
+    )
+    return rest
+  }
+  console.warn(
+    '[config] `rooms:` is now `groups:` on the Lights app. It still works; see kiosk.example.yaml.',
+  )
+  return {
+    ...rest,
+    apps: lightsApp
+      ? apps.map((app) => (app === lightsApp ? { ...app, groups: rooms } : app))
+      : [
+          ...apps,
+          {
+            id: 'lights',
+            type: 'lights',
+            name: 'Lights',
+            icon: 'lightbulb',
+            colors: ['#ffd60a', '#ff9f0a'],
+            groups: rooms,
+          },
+        ],
+  }
+}
+
 /** Validates the parsed YAML and fills in defaults. Throws `ConfigError` naming the bad keys. */
 export function parseHomeConfig(value: unknown): HomeConfig {
-  const result = kioskYamlSchema.safeParse(value ?? {}, { reportInput: true })
+  const result = kioskYamlSchema.safeParse(migrateRooms(value ?? {}), { reportInput: true })
   if (result.success) return result.data
   const problems = configProblems(result.error)
   throw new ConfigError(problems.slice(0, 5).join('\n'))

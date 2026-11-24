@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { FileCog } from '@lucide/vue'
-
-import ModalDialog from '@/components/molecules/ModalDialog.vue'
+import { AppSheet } from '@/kit'
 
 // Explains what to fix in kiosk.yaml: still on the example, or entity IDs that
 // Home Assistant doesn't know.
@@ -10,12 +8,10 @@ const emit = defineEmits<{ close: [] }>()
 </script>
 
 <template>
-  <ModalDialog
+  <AppSheet
     class="config-help-dialog"
-    size="compact"
-    title="kiosk.yaml"
+    :app="{ name: 'kiosk.yaml', icon: 'file-cog' }"
     :status="isExample ? 'Showing the example' : `${missing.length} not found`"
-    :icon="FileCog"
     @close="emit('close')"
   >
     <section v-if="isExample" class="section">
@@ -33,7 +29,7 @@ const emit = defineEmits<{ close: [] }>()
         <li v-for="id in missing" :key="id" class="id">{{ id }}</li>
       </ul>
     </section>
-  </ModalDialog>
+  </AppSheet>
 </template>
 
 <style scoped lang="scss">

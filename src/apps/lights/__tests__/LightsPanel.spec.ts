@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { LightsApp } from '@/apps'
 import { parseHomeConfig } from '@/config/home'
@@ -16,7 +17,11 @@ const config = parseHomeConfig({
       type: 'lights',
       name: 'Lights',
       groups: [
-        { name: 'Den', lights: ['light.den_lamp', 'light.den_spot'] },
+        {
+          name: 'Den',
+          lights: ['light.den_lamp', 'light.den_spot'],
+          scenes: [{ entity: 'scene.den_movie', name: 'Movie' }],
+        },
         { name: 'Hall', lights: ['light.hall'] },
       ],
     },
@@ -34,34 +39,58 @@ describe('LightsPanel', () => {
     store.connect(new MockConnection(config, 0))
   })
 
-  const mountPanel = () => mount(LightsPanel, { props: { app }, attachTo: document.body })
+  const mountPanel = (focus?: string) =>
+    mount(LightsPanel, { props: { app, focus }, attachTo: document.body })
 
-  it('lists the groups and the lights of the selected one', async () => {
+  it('shows a section per group: its row, its scenes and a card per light', () => {
     const wrapper = mountPanel()
-    expect(wrapper.findAll('.group').map((g) => g.find('.name').text())).toEqual(['Den', 'Hall'])
-    expect(wrapper.findAll('.light-tile')).toHaveLength(2)
-
-    await wrapper.findAll('.group')[1]!.trigger('click')
-    expect(wrapper.findAll('.light-tile').map((t) => t.find('.name').text())).toEqual(['Hall'])
+    const sections = wrapper.findAll('.group')
+    expect(sections.map((s) => s.find('.header .name').text())).toEqual(['Den', 'Hall'])
+    expect(sections[0]!.findAll('.light-card')).toHaveLength(2)
+    expect(sections[0]!.find('.scenes').text()).toContain('Movie')
+    expect(sections[1]!.find('.scenes').exists()).toBe(false)
     wrapper.unmount()
   })
 
-  it('toggles a single light from its tile', async () => {
+  it('toggles a light from its card icon, and a whole group from its row', async () => {
     const wrapper = mountPanel()
-    const before = store.get('light.den_spot')!.state
-    await wrapper.findAll('.light-tile')[1]!.find('.toggle').trigger('click')
-    expect(store.get('light.den_spot')!.state).toBe(before === 'on' ? 'off' : 'on')
+    const den = wrapper.findAll('.group')[0]!
+    const spot = () => store.get('light.den_spot')!.state
+
+    await den.findAll('.light-card')[1]!.find('.toggle').trigger('click')
+    expect(spot()).toBe('on')
     expect(store.get('light.den_lamp')!.state).toBe('on')
+
+    await den.find('.header .toggle-switch').trigger('click')
+    expect([store.get('light.den_lamp')!.state, spot()]).toEqual(['off', 'off'])
     wrapper.unmount()
   })
 
-  it('opens a light’s controls from its tile', async () => {
+  it('opens a light’s options under the cards when its name is tapped', async () => {
     const wrapper = mountPanel()
-    await wrapper.findAll('.light-tile')[0]!.find('.open').trigger('click')
-    expect(wrapper.find('.light-controls .name').text()).toBe('Den lamp')
+    const den = wrapper.findAll('.group')[0]!
+    expect(den.find('.options').exists()).toBe(false)
 
-    await wrapper.find('.light-controls .back').trigger('click')
-    expect(wrapper.find('.light-controls').exists()).toBe(false)
+    await den.findAll('.light-card')[0]!.find('.open').trigger('click')
+    const options = den.find('.options')
+    expect(options.find('.name').text()).toBe('Den lamp')
+    expect(options.find('.toggle-switch').exists()).toBe(true)
+    expect(options.findAll('.color-presets .swatch').length).toBeGreaterThan(0)
+    expect(options.find('.main > .icon').exists()).toBe(false)
+
+    await den.findAll('.light-card')[0]!.find('.open').trigger('click')
+    expect(den.find('.options').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('scrolls to the focused group and highlights it', async () => {
+    const scrollIntoView = vi.fn<() => void>()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const wrapper = mountPanel('hall')
+    await nextTick()
+    const hall = wrapper.findAll('.group')[1]!
+    expect(scrollIntoView.mock.contexts[0]).toBe(hall.element)
+    expect(hall.classes()).toContain('-highlighted')
     wrapper.unmount()
   })
 })

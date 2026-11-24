@@ -1,7 +1,7 @@
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 
+import { useEntity, useService } from '@/kit'
 import type { VacuumApp } from '.'
-import { useEntitiesStore } from '@/stores/entities'
 
 function humanize(value: string) {
   const text = value.replace(/_/g, ' ')
@@ -9,15 +9,19 @@ function humanize(value: string) {
 }
 
 export function useVacuum(app: MaybeRefOrGetter<VacuumApp>) {
-  const store = useEntitiesStore()
+  const callService = useService()
   const ids = () => toValue(app).entities
+  const vacuum = useEntity(() => ids().vacuum)
+  const progressSensor = useEntity(() => ids().progress)
+  const batterySensor = useEntity(() => ids().battery)
+  const statusSensor = useEntity(() => ids().status)
 
-  const state = computed(() => store.get(ids().vacuum)?.state ?? 'unavailable')
-  const progress = computed(() => Number(store.get(ids().progress)?.state ?? 0))
+  const state = computed(() => vacuum.value?.state ?? 'unavailable')
+  const progress = computed(() => Number(progressSensor.value?.state ?? 0))
   const battery = computed(
-    () => store.get(ids().battery)?.state ?? store.get(ids().vacuum)?.attributes.battery_level,
+    () => batterySensor.value?.state ?? vacuum.value?.attributes.battery_level,
   )
-  const status = computed(() => humanize(store.get(ids().status)?.state ?? state.value))
+  const status = computed(() => humanize(statusSensor.value?.state ?? state.value))
 
   return {
     state,
@@ -26,8 +30,7 @@ export function useVacuum(app: MaybeRefOrGetter<VacuumApp>) {
     status,
     isCleaning: computed(() => state.value === 'cleaning'),
     isPaused: computed(() => state.value === 'paused'),
-    press: (entityId: string) => store.callService('button', 'press', {}, { entity_id: entityId }),
-    command: (service: string) =>
-      store.callService('vacuum', service, {}, { entity_id: ids().vacuum }),
+    press: (entityId: string) => callService('button', 'press', {}, { entity_id: entityId }),
+    command: (service: string) => callService('vacuum', service, {}, { entity_id: ids().vacuum }),
   }
 }

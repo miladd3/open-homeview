@@ -1,15 +1,34 @@
-// How an app type is described. Each folder in src/apps calls `defineAppType`
-// once; src/apps/index.ts lists them all.
+// The kit for an app type's index.ts: `defineAppType` and the kiosk.yaml field
+// helpers. Each folder in src/apps calls `defineAppType` once; src/apps/index.ts
+// lists them all.
 //
-// No Vue in here or in the types' index.ts files: kiosk.yaml's schema is built
-// from them, and the schema must load without the UI (tests, `npm run schema`).
-// The screens are hooked up separately in src/apps/ui.ts.
+// kiosk.yaml's schema is built from the types' index.ts files, so they must load
+// without the UI (tests, `npm run schema`): screens are lazy imports, loaded the
+// first time they open.
 
+import type { Component, ComputedRef } from 'vue'
 import { z } from 'zod'
 
 import { type Gradient, gradient, icon, object, text } from '@/config/fields'
-import type { RoomConfig } from '@/config/home'
+import type { ColorPreset } from '@/config/home'
 import type { HassEntity } from '@/ha/types'
+
+export { z }
+export {
+  entity,
+  type Gradient,
+  gradient,
+  icon,
+  lightList,
+  list,
+  object,
+  optional,
+  seconds,
+  text,
+} from '@/config/fields'
+export type { ColorPreset } from '@/config/home'
+export type { IconName } from '@/config/icons'
+export { mockEntity, mockLight } from '@/ha/mock/entity'
 
 const DEFAULT_APP_COLORS: Gradient = ['#8e8e93', '#48484a']
 
@@ -41,10 +60,15 @@ export type ParsedApp<
     Outputs<Settings> & { entities: Simplify<Outputs<Entities>> }
 >
 
+export interface AppStatus {
+  text: string
+  /** The app is doing something worth highlighting (cleaning, TV on…). */
+  active: boolean
+}
+
 export interface FinishContext {
-  rooms: RoomConfig[]
-  /** Reports a problem with one of the app's keys, e.g. `problem('groups', 'needs…')`. */
-  problem: (key: string, message: string) => void
+  /** kiosk.yaml's color swatches for lights. */
+  colors: ColorPreset[]
 }
 
 export interface AppTypeSpec<
@@ -61,9 +85,20 @@ export interface AppTypeSpec<
   entities: Entities
   /** Any other keys, kept on the app as they are. */
   settings?: Settings
-  /** Opens full screen over everything (like a camera) instead of as a dialog. */
-  fullScreen?: boolean
-  /** Fills in what depends on the rest of kiosk.yaml, e.g. defaults from the rooms. */
+  /**
+   * Opens on the top layer, over the screensaver, instead of as a sheet (a camera).
+   * Closes any open sheet, keeps the screen awake and gets the event `message`.
+   */
+  overlay?: boolean
+  /**
+   * Opens when the app is tapped, as a lazy import: `() => import('./VacuumPanel.vue')`.
+   * Gets `app`, an optional `focus` (a part to scroll to) and emits `close`.
+   * Overlay types also get the event's `message`.
+   */
+  screen: () => Promise<Component | { default: Component }>
+  /** One-line live status for the Home screen chips. Leave out for no chip. */
+  status?: (app: App) => ComputedRef<AppStatus | null>
+  /** Fills in what depends on the rest of kiosk.yaml, e.g. the color swatches. */
   finish?: (app: ParsedApp<Type, Entities, Settings>, context: FinishContext) => App
   /** Fake Home Assistant entities for the app, for dev mode without Home Assistant. */
   mock: (app: App) => HassEntity[]

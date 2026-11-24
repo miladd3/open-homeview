@@ -5,8 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testConfig } from '@/__tests__/testConfig'
 import App from '@/App.vue'
-import { type AppConfig, appTypes, isFullScreen } from '@/apps'
-import { uiOf } from '@/apps/ui'
+import { type AppConfig, appTypes, isOverlay } from '@/apps'
 import { MockConnection } from '@/ha/mock/MockConnection'
 import { useConfigStore } from '@/stores/config'
 import { useEntitiesStore } from '@/stores/entities'
@@ -37,8 +36,8 @@ async function mountApp() {
 describe('app types', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('every type in the list has a screen', () => {
-    for (const { type } of appTypes) expect(uiOf({ type } as AppConfig).screen).toBeTruthy()
+  it('every type in the list has a screen', async () => {
+    for (const { screen } of appTypes) expect(await screen()).toBeTruthy()
   })
 
   it('the example config uses every type, so the checks below cover them all', () => {
@@ -47,10 +46,10 @@ describe('app types', () => {
     )
   })
 
-  it('only the camera opens full screen', () => {
-    expect(appTypes.filter((type) => type.fullScreen).map(({ type }) => type)).toEqual(['camera'])
-    expect(isFullScreen(appOf('camera'))).toBe(true)
-    expect(isFullScreen(appOf('vacuum'))).toBe(false)
+  it('only the camera is an overlay', () => {
+    expect(appTypes.filter((type) => type.overlay).map(({ type }) => type)).toEqual(['camera'])
+    expect(isOverlay(appOf('camera'))).toBe(true)
+    expect(isOverlay(appOf('vacuum'))).toBe(false)
   })
 
   it('opens each app with its own screen', async () => {
@@ -66,7 +65,7 @@ describe('app types', () => {
       kiosk.openApp(appOf(type).id)
       await flushPromises()
       expect(wrapper.findComponent({ name: component }).exists()).toBe(true)
-      kiosk.closeDialogs()
+      kiosk.closeApp()
       await flushPromises()
       expect(wrapper.findComponent({ name: component }).exists()).toBe(false)
     }
