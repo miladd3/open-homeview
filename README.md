@@ -42,19 +42,19 @@ Images are built for `amd64` and `arm64`. Tags: `latest` (main branch), and `x.y
 
 ## Screens
 
-| Screen      | What it does                                                                                                                      |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Home        | A grid of widgets (5 × 3 cells on 1280×720), in pages you swipe sideways: clock, weather, rooms, scenes, lights, a thermostat, …  |
-| Apps        | Tap an app's widget. Every app opens full screen; ✕ or Esc closes it: robot vacuum, TV remote, any on/off entity…                 |
-| Lights app  | One section per group (room): its switch and brightness, its scenes, then each light. Tap a light's icon for its color swatches.  |
-| Camera      | Full-screen camera. Opens from its widget or from an event (a doorbell ring, over everything); closes after 60 s without a touch. |
-| Screensaver | After 60 s idle: big clock + weather, dimmed 22:00–07:00, small pixel shift against burn-in.                                      |
+| Screen     | What it does                                                                                                                      |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Home       | A grid of widgets (5 × 3 cells on 1280×720), in pages you swipe sideways: clock, weather, rooms, scenes, lights, a thermostat, …  |
+| Apps       | Tap an app's widget. Every app opens full screen; ✕ or Esc closes it: robot vacuum, TV remote, any on/off entity…                 |
+| Lights app | One section per group (room): its switch and brightness, its scenes, then each light. Tap a light's icon for its color swatches.  |
+| Camera     | Full-screen camera. Opens from its widget or from an event (a doorbell ring, over everything); closes after 60 s without a touch. |
+| Standby    | After 60 s idle: faces you swipe sideways (big clock, modular, home modular); a tap wakes. Night face, dimmed, 22:00–07:00.       |
 
-Rooms are the Lights app's groups. A group's widget toggles its lights on tap; its corner arrow opens the Lights app scrolled to that room. **Long-press** a light or room widget for a brightness slider.
+Rooms are the Lights app's groups. On a group's widget, the round icon toggles its lights; a tap anywhere else opens the Lights app scrolled to that room. **Long-press** a light or room widget for a brightness slider.
 
 ## Configuration: `kiosk.yaml`
 
-Apps, the dashboard, scenes, events, weather, color swatches, wallpaper and timings all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
+Apps, the dashboard, scenes, events, weather, color swatches, wallpaper and standby faces all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
 
 - In Docker it is mounted at `/config/kiosk.yaml`. Until it exists, the kiosk shows the example, with a **kiosk.yaml** notice on the Home screen explaining what to do.
 - The kiosk checks it every minute and **reloads itself when it changes**, so you never have to touch the screen. Edit the file and the wall screen updates within a minute.
@@ -65,7 +65,8 @@ Apps, the dashboard, scenes, events, weather, color swatches, wallpaper and timi
 - App types: `vacuum`, `tv`, `switch` (any on/off entity plus optional sensors), `lights` and `camera`. These only have a widget: `clock`, `weather`, `scene`, `light`, `climate`, `lock` and `sensor`.
 - `dashboard` is a list of pages, each a list of widgets that flow into the grid in order (a full page goes on to the next). An entry is `clock` (a type with no keys), `{ app: vacuum }` (an app from `apps`), or a type written inline: `{ type: lock, entity: lock.front_door }`. Inline entries need no `id`, and their `name` defaults to the entity's (`lock.front_door` → Front door). Any entry takes a `size` (`1x1`, `2x1`, `1x2`, `2x2`, `4x2`: columns × rows) that its widget offers. A Lights widget takes a `group`: `{ app: lights, group: bedroom }`.
 - Without `dashboard`, the kiosk makes one: the clock, the weather, each Lights group, then every app. Add `hidden: true` to leave an app out of it (it then only opens from an event).
-- `events` open an app on their own, over everything (and out of the screensaver). Each names an `entity` and the app to `open`. An `event.*` entity (a doorbell ring, a button press) fires every time it changes, optionally only for some `eventTypes`. Any other entity fires when it changes `to` a state, e.g. `binary_sensor.driveway_motion` with `to: 'on'`. A `message` shows on the camera view (e.g. "Someone is at the door").
+- `events` open an app on their own, over everything (and out of standby). Each names an `entity` and the app to `open`. An `event.*` entity (a doorbell ring, a button press) fires every time it changes, optionally only for some `eventTypes`. Any other entity fires when it changes `to` a state, e.g. `binary_sensor.driveway_motion` with `to: 'on'`. A `message` shows on the camera view (e.g. "Someone is at the door").
+- `standby` is what the screen shows when idle: after `afterSeconds` (default 60), the `faces` you swipe through, then a tap wakes to Home. A face entry is `night` or `{ face: modular, color: '#ff9f0a', slots: { right1: weather } }`: the face's own keys sit next to `face:`, and `slots` take dashboard entries for widgets that can sit on a face (a tap on one does the widget's action, not wake). During `night.hours` (default 22 to 7) only `night.face` shows (default `night`), dimmed. Without `standby`: big-clock with the weather. Faces: `big-clock`, `modular`, `home-modular`, `night`. Faces move a few pixels every minute against burn-in.
 - An app's entity IDs go right on the app (`camera: camera.front_door`, `player: media_player.tv`).
 - The `lights` app lists `groups` (usually rooms), each with a `name`, an optional `icon`, its `lights` and optional `scenes`. A group's `id` defaults to its name in lower case with dashes (`Living Room` → `living-room`).
 
@@ -119,7 +120,7 @@ npm run format               # oxfmt (Prettier-compatible output)
 npm run build                # type-check + production build
 ```
 
-Without `HA_URL`/`HA_TOKEN` in `.env.local`, `npm run dev` runs against an in-memory **mock** built from `kiosk.yaml` (or the example). Add `?mock` to any URL to force the mock. In mock mode a small **Mock** toolbar (bottom-right) has a button for each of your `events` (fires it, like a doorbell ring) and one for the screensaver. Keyboard: `E` = first event, `S` = sleep.
+Without `HA_URL`/`HA_TOKEN` in `.env.local`, `npm run dev` runs against an in-memory **mock** built from `kiosk.yaml` (or the example). Add `?mock` to any URL to force the mock. In mock mode a small **Mock** toolbar (bottom-right) has a button for each of your `events` (fires it, like a doorbell ring) and one for standby. Keyboard: `E` = first event, `S` = standby.
 
 ## Structure
 
@@ -128,15 +129,16 @@ kiosk.example.yaml        # example config: copy to kiosk.yaml
 server/                   # Node server (runs .ts directly): serves the page + kiosk.yaml, and the HA auth proxy
 src/
   apps/                 # every app type, one folder each (see "App types" below)
+  faces/                # every standby face, one folder each (see "Faces" below)
   config/               # kiosk.yaml schema + validation (home.ts), shared schema helpers (fields.ts), loader, icons
   ha/                   # HaConnection interface, LiveConnection (home-assistant-js-websocket), mock
-  kit/                  # what app folders may use: AppSheet, Widget parts, controls, useEntity/useService, defineAppType (define.ts)
-  stores/               # config (parsed kiosk.yaml), entities (HA state), kiosk (open app, full-screen apps, screensaver)
+  kit/                  # what app and face folders may use: AppSheet, Widget parts, FaceSlot, controls, useEntity/useService, defineAppType/defineFace (define.ts)
+  stores/               # config (parsed kiosk.yaml), entities (HA state), kiosk (open app, overlay apps, standby)
   composables/          # useConfigReload, useIdle, useEvents, …
   components/
     atoms/              # GlassPanel, IconButton, RangeSlider, ProgressBar, ToggleSwitch
-    molecules/          # ClockDisplay, WeatherSummary, CameraFeed
-    organisms/          # DashboardHost (the grid), WidgetCell, DefaultWidget, ScreenSaver, DevToolbar, ConfigHelpDialog
+    molecules/          # ClockDisplay, CameraFeed
+    organisms/          # DashboardHost (the grid), WidgetCell, DefaultWidget, StandbyHost (faces), DevToolbar, ConfigHelpDialog
   views/                # HomeView, ConfigErrorView
   styles/               # design tokens (CSS custom properties) + base reset
 ```
@@ -161,6 +163,22 @@ src/apps/vacuum/
 - A type without `widget` gets a 1×1 one from its `status` (icon, name, status text; tap opens the screen). A type without `screen` is widget-only (clock, scene…).
 
 App folders import only from `@/kit` (UI), `@/kit/define` (`index.ts`), `vue`, `@lucide/vue` and their own folder; `npm run lint` enforces it. Talk to Home Assistant with `useEntity` and `useService`. To add one: copy a small folder like `switch/` or `lock/`, then run `npm run schema`. The screen and widget are lazy imports (`screen: () => import('./VacuumPanel.vue')`), so the schema loads without the UI and each is its own chunk. A widget that throws shows as a grey "Widget error" cell; the rest of the dashboard keeps working.
+
+### Faces
+
+Every folder in [`src/faces/`](src/faces/) is a standby face, found on its own ([`src/faces/index.ts`](src/faces/index.ts)); the folder name is the face id.
+
+```
+src/faces/modular/
+  index.ts          # export default defineFace({ id, name, description, screen, options, slots })
+  ModularFace.vue   # the face: gets `options` and `night`, puts <FaceSlot name="right1" /> where widgets go
+```
+
+- `options` are the face's keys in kiosk.yaml (Zod fields with defaults, e.g. `color`); they can't be called `face` or `slots`.
+- `slots` name the places for widgets and the sizes each takes (`right1: { sizes: ['1x1'] }`). `<FaceSlot>` renders the widget kiosk.yaml put there, in `complication` mode, or nothing. Only widgets whose type sets `complication: true` may sit in a slot.
+- `StandbyHost` does the rest: the idle timer, swiping, tap to wake, night hours and the burn-in shift. A face only draws itself: no timers but `useNow` (once a second), and animate only `transform` and `opacity`.
+
+Face folders follow the same import rule as app folders. To add one: copy `night/`, then run `npm run schema`.
 
 ### Styling conventions
 

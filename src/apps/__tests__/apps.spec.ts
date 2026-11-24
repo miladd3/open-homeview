@@ -1,48 +1,16 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { mountApp } from '@/__tests__/mountApp'
 import { loadAllParts, testConfig } from '@/__tests__/testConfig'
-import App from '@/App.vue'
 import { type AppConfig, appTypes, isOverlay } from '@/apps'
 import type { HomeConfig } from '@/config/home'
-import { MockConnection } from '@/ha/mock/MockConnection'
-import { useConfigStore } from '@/stores/config'
 import { useEntitiesStore } from '@/stores/entities'
 import { useKioskStore } from '@/stores/kiosk'
-import HomeView from '@/views/HomeView.vue'
 
 function appOf(type: AppConfig['type']) {
   return testConfig.apps.find((app) => app.type === type)!
-}
-
-async function mountApp(config: HomeConfig = testConfig) {
-  // jsdom has no matchMedia (useTouchCursor asks for the pointer type), ResizeObserver
-  // or scrollIntoView (Lights scrolls to a focused group).
-  vi.stubGlobal('matchMedia', () => ({ matches: false }))
-  Element.prototype.scrollIntoView = () => {}
-  vi.stubGlobal(
-    'ResizeObserver',
-    class {
-      observe() {}
-      disconnect() {}
-    },
-  )
-  useConfigStore().set(config)
-  useEntitiesStore().connect(new MockConnection(config, 0))
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [{ path: '/', name: 'home', component: HomeView }],
-  })
-  router.push('/')
-  await router.isReady()
-  const wrapper = mount(App, {
-    attachTo: document.body,
-    global: { plugins: [router], stubs: { CameraFeed: true, Transition: false } },
-  })
-  await flushPromises()
-  return wrapper
 }
 
 /** The dashboard cell holding the widget of this app (and Lights group). */
@@ -124,9 +92,17 @@ describe('dashboard', () => {
     wrapper.unmount()
   })
 
-  it('opens Lights at a group from the corner arrow of its widget', async () => {
+  it('opens Lights at a group from its widget, and its icon toggles the group', async () => {
     const wrapper = await mountApp()
-    await cellOf(wrapper, 'Bedroom').find('.open').trigger('click')
+    const cell = cellOf(wrapper, 'Bedroom')
+    const before = useEntitiesStore().get('light.bedroom_ceiling')?.state
+
+    await cell.find('.toggle').trigger('click')
+    await flushPromises()
+    expect(useEntitiesStore().get('light.bedroom_ceiling')?.state).not.toBe(before)
+    expect(wrapper.findComponent({ name: 'LightsPanel' }).exists()).toBe(false)
+
+    await cell.find('.kit-widget').trigger('click')
     await flushPromises()
     expect(useKioskStore().focus).toBe('bedroom')
     expect(wrapper.findComponent({ name: 'LightsPanel' }).exists()).toBe(true)

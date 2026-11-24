@@ -29,7 +29,7 @@ function start(config = testConfig) {
 describe('events', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('a doorbell ring opens the camera over the screensaver and apps', async () => {
+  it('a doorbell ring opens the camera over standby and apps', async () => {
     const { mock, kiosk, fired, scope } = start()
     kiosk.openApp('lights')
     kiosk.sleep()
@@ -39,12 +39,12 @@ describe('events', () => {
 
     expect(fired).toEqual(['event.front_door_doorbell'])
     expect(kiosk.overlay).toEqual({ appId: 'front-door', message: 'Someone is at the door' })
-    expect(kiosk.screensaver).toBe(false)
+    expect(kiosk.standby).toBe(false)
     expect(kiosk.activeAppId).toBeNull()
 
-    // The screensaver waits while the camera is open.
+    // Standby waits while the camera is open.
     kiosk.sleep()
-    expect(kiosk.screensaver).toBe(false)
+    expect(kiosk.standby).toBe(false)
     scope.stop()
   })
 
@@ -78,7 +78,7 @@ describe('events', () => {
     expect(fired).toEqual(['binary_sensor.motion'])
     expect(kiosk.activeAppId).toBe('adguard')
     expect(kiosk.overlay).toBeNull()
-    expect(kiosk.screensaver).toBe(false)
+    expect(kiosk.standby).toBe(false)
     scope.stop()
   })
 })

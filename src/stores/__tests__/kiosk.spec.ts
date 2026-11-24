@@ -18,11 +18,11 @@ describe('kiosk store', () => {
     expect(kiosk.activeAppId).toBeNull()
   })
 
-  it('closes the app when the screensaver starts', () => {
+  it('closes the app when standby starts', () => {
     const kiosk = useKioskStore()
     kiosk.openApp('tv')
     kiosk.sleep()
     expect(kiosk.activeAppId).toBeNull()
-    expect(kiosk.screensaver).toBe(true)
+    expect(kiosk.standby).toBe(true)
   })
 })

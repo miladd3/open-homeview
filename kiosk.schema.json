@@ -1620,62 +1620,7 @@
             "minItems": 1,
             "type": "array",
             "items": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "minLength": 1,
-                  "description": "A type with no keys, e.g. clock or weather."
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "app": {
-                      "description": "The ID of an app in `apps:`.",
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "type": {
-                      "description": "An app type written right here, with its keys. One of: camera, climate, clock, light, lights, lock, scene, sensor, switch, tv, vacuum, weather.",
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "size": {
-                      "description": "Columns x rows. Default: the widget's first size.",
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "enum": [
-                            "1x1",
-                            "2x1",
-                            "1x2",
-                            "2x2",
-                            "4x2"
-                          ]
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  },
-                  "additionalProperties": {}
-                }
-              ],
-              "description": "A widget: `clock`, `{ app: <id> }` for an app in `apps:`, or `{ type: <type>, ... }` written inline."
+              "$ref": "#/$defs/dashboardEntry"
             }
           }
         },
@@ -1823,53 +1768,377 @@
         }
       ]
     },
-    "timings": {
-      "default": {
-        "screensaverSeconds": 60,
-        "configCheckSeconds": 60
-      },
+    "standby": {
+      "description": "What the screen shows when nobody uses it: faces you swipe through.",
+      "default": {},
       "type": "object",
       "properties": {
-        "screensaverSeconds": {
+        "afterSeconds": {
           "default": 60,
-          "description": "Idle time before the screensaver.",
+          "description": "Seconds without a touch before standby.",
           "type": "number",
           "exclusiveMinimum": 0
         },
-        "configCheckSeconds": {
-          "default": 60,
-          "description": "How often to check kiosk.yaml for changes.",
-          "type": "number",
-          "exclusiveMinimum": 0
-        }
-      },
-      "additionalProperties": false
-    },
-    "nightHours": {
-      "default": {
-        "from": 22,
-        "to": 7
-      },
-      "description": "Hours (local time) during which the screensaver is dimmed.",
-      "type": "object",
-      "properties": {
-        "from": {
-          "default": 22,
-          "type": "number",
-          "minimum": 0,
-          "maximum": 24
+        "faces": {
+          "description": "The faces you swipe through; the first shows first. Default: big-clock with the weather.",
+          "anyOf": [
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/faceEntry"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
-        "to": {
-          "default": 7,
-          "type": "number",
-          "minimum": 0,
-          "maximum": 24
+        "night": {
+          "description": "During these hours, standby shows this face, dimmed.",
+          "default": {},
+          "type": "object",
+          "properties": {
+            "hours": {
+              "description": "Local time, e.g. { from: 22, to: 7 }.",
+              "default": {},
+              "type": "object",
+              "properties": {
+                "from": {
+                  "default": 22,
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 24
+                },
+                "to": {
+                  "default": 7,
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 24
+                }
+              },
+              "additionalProperties": false
+            },
+            "face": {
+              "$ref": "#/$defs/faceEntry"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     }
   },
   "additionalProperties": false,
+  "$defs": {
+    "dashboardEntry": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "A type with no keys, e.g. clock or weather."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "app": {
+              "description": "The ID of an app in `apps:`.",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "description": "An app type written right here, with its keys. One of: camera, climate, clock, light, lights, lock, scene, sensor, switch, tv, vacuum, weather.",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "size": {
+              "description": "Columns x rows. Default: the widget's first size.",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "1x1",
+                    "2x1",
+                    "1x2",
+                    "2x2",
+                    "4x2"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": {}
+        }
+      ],
+      "description": "A widget: `clock`, `{ app: <id> }` for an app in `apps:`, or `{ type: <type>, ... }` written inline."
+    },
+    "faceEntry": {
+      "anyOf": [
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "face": {
+                  "type": "string",
+                  "const": "big-clock",
+                  "description": "Big clock: The time and date, big, with one widget under them."
+                },
+                "slots": {
+                  "description": "Widgets in the slots, written like dashboard entries.",
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "bottom": {
+                          "description": "A widget that can sit on a face, 2x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "face"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "face": {
+                  "type": "string",
+                  "const": "home-modular",
+                  "description": "Home modular: Six widgets in two rows on a tinted background, to work the home from standby."
+                },
+                "color": {
+                  "default": "#5e5ce6",
+                  "description": "The background tint, e.g. \"#5e5ce6\".",
+                  "type": "string"
+                },
+                "slots": {
+                  "description": "Widgets in the slots, written like dashboard entries.",
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "top1": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "top2": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "top3": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "bottom1": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "bottom2": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "bottom3": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "face"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "face": {
+                  "type": "string",
+                  "const": "modular",
+                  "description": "Modular: The date and time on the left, three widgets on the right."
+                },
+                "color": {
+                  "default": "#ff9f0a",
+                  "description": "Color of the date, e.g. \"#7aa7ff\".",
+                  "type": "string"
+                },
+                "slots": {
+                  "description": "Widgets in the slots, written like dashboard entries.",
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "right1": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "right2": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "right3": {
+                          "description": "A widget that can sit on a face, 1x1.",
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/dashboardEntry"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "face"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "face": {
+                  "type": "string",
+                  "const": "night",
+                  "description": "Night: Dim red digits on black, for night hours."
+                },
+                "slots": {
+                  "description": "Widgets in the slots, written like dashboard entries.",
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "face"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "big-clock",
+            "home-modular",
+            "modular",
+            "night"
+          ]
+        }
+      ],
+      "description": "A face: big-clock, home-modular, modular, night, or { face: <id>, ...its options, slots }."
+    }
+  },
   "$id": "https://raw.githubusercontent.com/miladd3/open-homeview/main/kiosk.schema.json",
   "title": "Open HomeView kiosk.yaml"
 }

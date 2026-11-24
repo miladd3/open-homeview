@@ -1,19 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { isOverlay, screenOf } from '@/apps'
 import DevToolbar from '@/components/organisms/DevToolbar.vue'
-import ScreenSaver from '@/components/organisms/ScreenSaver.vue'
+import StandbyHost from '@/components/organisms/StandbyHost.vue'
 import { useConfigReload } from '@/composables/useConfigReload'
 import { useEvents } from '@/composables/useEvents'
-import { useIdle } from '@/composables/useIdle'
 import { useTouchCursor } from '@/composables/useTouchCursor'
 import { useConfigStore } from '@/stores/config'
 import { useEntitiesStore } from '@/stores/entities'
 import { useKioskStore } from '@/stores/kiosk'
 
-const router = useRouter()
 const config = useConfigStore()
 const kiosk = useKioskStore()
 const mock = useEntitiesStore().mock()
@@ -31,12 +28,6 @@ const wallpaper = computed(() => ({
   '--wallpaper-to': config.home.wallpaper[1],
 }))
 
-function sleep() {
-  kiosk.sleep()
-  if (kiosk.screensaver) router.push({ name: 'home' })
-}
-
-useIdle(config.home.timings.screensaverAfterMs, sleep)
 useEvents((event) => kiosk.openApp(event.appId, { message: event.message }))
 useConfigReload()
 useTouchCursor()
@@ -64,9 +55,7 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
       />
     </Transition>
 
-    <Transition name="screensaver">
-      <ScreenSaver v-if="kiosk.screensaver" @wake="kiosk.wake" />
-    </Transition>
+    <StandbyHost />
 
     <Transition name="overlay">
       <component
@@ -79,7 +68,7 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
       />
     </Transition>
 
-    <DevToolbar v-if="mock" :mock="mock" @sleep="sleep" />
+    <DevToolbar v-if="mock" :mock="mock" />
   </div>
 </template>
 

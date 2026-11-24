@@ -9,6 +9,7 @@
 import { z } from 'zod'
 
 import { type AppConfig, appSchema, appTypeOf, appTypes, finishApp, widgetSizes } from '@/apps'
+import { faceTypes } from '@/faces'
 import { WIDGET_SIZES, type WidgetSize } from '@/kit/define'
 import type { LightsApp } from '@/apps/lights'
 import type { Rgb } from '@/ha/lightColor'
@@ -53,6 +54,25 @@ export interface DashboardWidget {
   settings: Record<string, unknown>
 }
 
+/** A face as kiosk.yaml sets it: which one, its options, and the widgets in its slots. */
+export interface FaceEntry {
+  face: string
+  options: Record<string, unknown>
+  slots: Record<string, DashboardWidget>
+}
+
+/** What the screen shows when nobody uses it. */
+export interface StandbyConfig {
+  afterMs: number
+  /** Swiped through in order; the first shows first. */
+  faces: FaceEntry[]
+  night: {
+    /** Local time. `from` may be later than `to` (22 to 7). */
+    hours: { from: number; to: number }
+    face: FaceEntry
+  }
+}
+
 export interface HomeConfig {
   wallpaper: Gradient
   /** `lite` drops live blur and shadows, for weak GPUs like the Pi's. */
@@ -63,13 +83,7 @@ export interface HomeConfig {
   /** Pages of widgets. Generated from the apps when kiosk.yaml has no `dashboard:`. */
   dashboard: DashboardWidget[][]
   events: EventConfig[]
-  timings: {
-    screensaverAfterMs: number
-    /** How often the kiosk checks kiosk.yaml for changes. */
-    configCheckMs: number
-  }
-  /** Hours (local time) during which the screensaver is dimmed. */
-  nightHours: { from: number; to: number }
+  standby: StandbyConfig
 }
 
 const DEFAULT_COLORS: ColorPreset[] = [
@@ -139,6 +153,8 @@ const dashboardEntry = z
     }),
   ])
   .meta({
+    // An id puts it in kiosk.schema.json's $defs once, not inline in every face slot.
+    id: 'dashboardEntry',
     description:
       'A widget: `clock`, `{ app: <id> }` for an app in `apps:`, or `{ type: <type>, ... }` written inline.',
   })
@@ -146,23 +162,26 @@ const dashboardEntry = z
 type DashboardEntry = z.output<typeof dashboardEntry>
 type Issue = { message: string; path: PropertyKey[] } & Partial<z.core.$ZodIssue>
 
+type Report = (issue: Issue) => void
+
+const reportAll = (report: Report, issues: z.core.$ZodIssue[], at: PropertyKey[]) =>
+  issues.forEach((issue) => report({ ...issue, path: [...at, ...issue.path] }))
+
 /**
- * Turns `dashboard:` entries into widgets. Inline entries become apps of their
- * own, added to `inline`. Problems go to `report`, with their path.
+ * Turns a dashboard entry (on the dashboard or in a face slot) into a widget.
+ * Inline entries become apps of their own, added to `inline`, with their path
+ * as id. Problems go to `report`, with their path.
  */
-function resolveDashboard(
-  pages: DashboardEntry[][],
+function entryResolver(
   apps: AppConfig[],
   context: FinishContext,
   inline: AppConfig[],
-  report: (issue: Issue) => void,
-): DashboardWidget[][] {
+  report: Report,
+) {
   const appIds = apps.map((app) => app.id)
   const typeNames = appTypes.map((t) => t.type)
-  const reportAll = (issues: z.core.$ZodIssue[], at: PropertyKey[]) =>
-    issues.forEach((issue) => report({ ...issue, path: [...at, ...issue.path] }))
 
-  function resolve(entry: DashboardEntry, at: PropertyKey[]): DashboardWidget | undefined {
+  return function resolve(entry: DashboardEntry, at: PropertyKey[]): DashboardWidget | undefined {
     const { app: appId, type, size, ...rest } = typeof entry === 'string' ? { type: entry } : entry
     let app: AppConfig | undefined
     let settings: Record<string, unknown> = rest
@@ -188,8 +207,8 @@ function resolveDashboard(
       const own = Object.fromEntries(Object.entries(rest).filter(([k]) => !widgetKeys.includes(k)))
       settings = Object.fromEntries(Object.entries(rest).filter(([k]) => widgetKeys.includes(k)))
       const parsed = definition.inlineSchema.safeParse({ type, ...own }, { reportInput: true })
-      if (!parsed.success) return void reportAll(parsed.error.issues, at)
-      app = finishApp({ ...parsed.data, id: `dashboard/${at.slice(1).join('/')}` }, context)
+      if (!parsed.success) return void reportAll(report, parsed.error.issues, at)
+      app = finishApp({ ...parsed.data, id: at.join('/') }, context)
       inline.push(app)
     }
 
@@ -203,15 +222,104 @@ function resolveDashboard(
     const parsed = object(definition.widget?.settings ?? {}).safeParse(settings, {
       reportInput: true,
     })
-    if (!parsed.success) return void reportAll(parsed.error.issues, at)
+    if (!parsed.success) return void reportAll(report, parsed.error.issues, at)
     const problem = definition.widget?.check?.(app, parsed.data)
     if (problem) report({ path: at, message: problem })
     return { app, size: size ?? sizes[0]!, settings: parsed.data }
   }
+}
 
-  return pages.map((page, p) =>
-    page.flatMap((entry, i) => resolve(entry, ['dashboard', p, i]) ?? []),
-  )
+// ---- standby faces ----
+
+const faceIds = faceTypes.map((face) => face.id)
+
+/** One face's entry, e.g. `{ face: modular, color: …, slots: { right1: weather } }`. */
+const faceSchemas = new Map(
+  faceTypes.map((face) => [
+    face.id,
+    object({
+      face: z.literal(face.id).meta({ description: `${face.name}: ${face.description}` }),
+      ...face.options,
+      slots: optional(
+        object(
+          Object.fromEntries(
+            Object.entries(face.slots ?? {}).map(([name, slot]) => [
+              name,
+              optional(dashboardEntry).meta({
+                description: `A widget that can sit on a face, ${slot.sizes.join(' or ')}.`,
+              }),
+            ]),
+          ),
+        ),
+      ).meta({ description: 'Widgets in the slots, written like dashboard entries.' }),
+    }),
+  ]),
+)
+
+type FaceInput = { face: string; slots?: Record<string, DashboardEntry | undefined> }
+
+const faceEntry = z
+  // The mapping first: on a tie, a bad mapping is reported as one, not as a bad id.
+  .union([
+    z.discriminatedUnion('face', [...faceSchemas.values()] as unknown as Parameters<
+      typeof z.discriminatedUnion
+    >[1]) as unknown as z.ZodType<FaceInput>,
+    z.enum(faceIds as [string, ...string[]], {
+      error: (issue) => `must be one of: ${faceIds.join(', ')}.${didYouMean(issue.input, faceIds)}`,
+    }),
+  ])
+  .meta({
+    id: 'faceEntry',
+    description: `A face: ${faceIds.join(', ')}, or { face: <id>, ...its options, slots }.`,
+  })
+
+const hour = z.number().min(0).max(24)
+
+/**
+ * Checks a face entry and fills its slots. A slot takes a widget whose type may
+ * sit on a face (`complication`), at the first of the slot's sizes it offers.
+ */
+function resolveFace(
+  input: FaceInput | string,
+  at: PropertyKey[],
+  resolve: ReturnType<typeof entryResolver>,
+  report: Report,
+): FaceEntry | undefined {
+  let entry = input as FaceInput & Record<string, unknown>
+  if (typeof input === 'string') {
+    const parsed = faceSchemas.get(input)!.safeParse({ face: input }, { reportInput: true })
+    if (!parsed.success) return void reportAll(report, parsed.error.issues, at)
+    entry = parsed.data as typeof entry
+  }
+  const { face, slots: written = {}, ...options } = entry
+  const spec = faceTypes.find((item) => item.id === face)!
+  const slots: Record<string, DashboardWidget> = {}
+  for (const [name, slotEntry] of Object.entries(written)) {
+    if (slotEntry === undefined) continue
+    const where = [...at, 'slots', name]
+    const widget = resolve(slotEntry, where)
+    if (!widget) continue
+    if (!appTypeOf(widget.app.type)!.widget?.complication) {
+      const fit = appTypes.filter((t) => t.widget?.complication).map((t) => t.type)
+      report({
+        path: where,
+        message: `${widget.app.type} can't sit on a face. These can: ${fit.join(', ')}.`,
+      })
+      continue
+    }
+    const fits = spec.slots![name]!.sizes
+    const asked = typeof slotEntry === 'string' ? undefined : slotEntry.size
+    const size = asked ?? fits.find((s) => widgetSizes(widget.app).includes(s))
+    if (!size || !fits.includes(size)) {
+      report({
+        path: asked ? [...where, 'size'] : where,
+        message: `the ${name} slot of ${face} takes ${fits.join(' or ')}, and ${widget.app.type} widgets are ${widgetSizes(widget.app).join(' or ')}`,
+      })
+      continue
+    }
+    slots[name] = { ...widget, size }
+  }
+  return { face, options, slots }
 }
 
 /** Without `dashboard:`: the clock, the weather, each Lights group, then every other app. */
@@ -269,16 +377,23 @@ export const kioskYamlSchema = object({
       'Things in Home Assistant that open an app on their own, e.g. a ring opens the camera.',
   }),
   colors: optional(z.array(colorPreset)).meta({ description: 'Color swatches for lights.' }),
-  timings: object({
-    screensaverSeconds: seconds(60, 'Idle time before the screensaver.'),
-    configCheckSeconds: seconds(60, 'How often to check kiosk.yaml for changes.'),
-  }).default({ screensaverSeconds: 60, configCheckSeconds: 60 }),
-  nightHours: object({
-    from: z.number().min(0).max(24).default(22),
-    to: z.number().min(0).max(24).default(7),
+  standby: object({
+    afterSeconds: seconds(60, 'Seconds without a touch before standby.'),
+    faces: optional(z.array(faceEntry).min(1, 'needs a face')).meta({
+      description:
+        'The faces you swipe through; the first shows first. Default: big-clock with the weather.',
+    }),
+    night: object({
+      hours: object({ from: hour.default(22), to: hour.default(7) })
+        .prefault({})
+        .meta({ description: 'Local time, e.g. { from: 22, to: 7 }.' }),
+      face: faceEntry.default('night'),
+    })
+      .prefault({})
+      .meta({ description: 'During these hours, standby shows this face, dimmed.' }),
   })
-    .default({ from: 22, to: 7 })
-    .meta({ description: 'Hours (local time) during which the screensaver is dimmed.' }),
+    .prefault({})
+    .meta({ description: 'What the screen shows when nobody uses it: faces you swipe through.' }),
 })
   .superRefine((raw, ctx) => {
     const seen = new Set<string>()
@@ -324,11 +439,26 @@ export const kioskYamlSchema = object({
     const context: FinishContext = { colors: raw.colors ?? DEFAULT_COLORS, weather: raw.weather }
     const apps = raw.apps.map((item) => finishApp(item, context))
     const inline: AppConfig[] = []
+    const report: Report = (issue) =>
+      ctx.addIssue({ code: 'custom', ...issue } as z.core.$ZodRawIssue)
+    const resolve = entryResolver(apps, context, inline, report)
     const dashboard = raw.dashboard
-      ? resolveDashboard(raw.dashboard, apps, context, inline, (issue) =>
-          ctx.addIssue({ code: 'custom', ...issue } as z.core.$ZodRawIssue),
+      ? raw.dashboard.map((page, p) =>
+          page.flatMap((entry, i) => resolve(entry, ['dashboard', p, i]) ?? []),
         )
       : generateDashboard(apps, context, inline)
+    const { standby } = raw
+    const faces = standby.faces ?? [
+      raw.weather ? { face: 'big-clock', slots: { bottom: 'weather' } } : 'big-clock',
+    ]
+    const face = (entry: FaceInput | string, at: PropertyKey[]) =>
+      resolveFace(entry, ['standby', ...at], resolve, report)!
+    // Before `apps`, which takes the inline apps of the slots too.
+    const standbyConfig: StandbyConfig = {
+      afterMs: standby.afterSeconds * 1000,
+      faces: faces.map((entry, i) => face(entry, ['faces', i])),
+      night: { hours: standby.night.hours, face: face(standby.night.face, ['night', 'face']) },
+    }
     return {
       wallpaper: raw.wallpaper,
       graphics: raw.graphics,
@@ -336,11 +466,7 @@ export const kioskYamlSchema = object({
       apps: [...apps, ...inline],
       dashboard,
       events: raw.events,
-      timings: {
-        screensaverAfterMs: raw.timings.screensaverSeconds * 1000,
-        configCheckMs: raw.timings.configCheckSeconds * 1000,
-      },
-      nightHours: raw.nightHours,
+      standby: standbyConfig,
     }
   })
 
@@ -373,13 +499,20 @@ function issueText(issue: z.core.$ZodIssue, base: readonly PropertyKey[] = []): 
 
   switch (issue.code) {
     case 'invalid_union': {
-      // A bad app `type`.
-      const noMatch = issue as unknown as { note?: string; options?: string[]; input?: unknown }
+      // A bad app `type` or face.
+      const noMatch = issue as unknown as {
+        note?: string
+        options?: string[]
+        input?: unknown
+        discriminator?: string
+      }
       if (noMatch.note === 'No matching discriminator' && noMatch.options) {
-        const { options, input } = noMatch
-        // Zod reports the whole object here, not just its `type`.
+        const { options, input, discriminator = 'type' } = noMatch
+        // Zod reports the whole object here, not just its `type` (or `face`).
         const value =
-          input && typeof input === 'object' ? (input as { type?: unknown }).type : input
+          input && typeof input === 'object'
+            ? (input as Record<string, unknown>)[discriminator]
+            : input
         return [say(`must be one of: ${options.join(', ')}.${didYouMean(value, options)}`)]
       }
       // Either/or values (a scene as text or as a mapping): report the branch that

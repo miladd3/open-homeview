@@ -157,7 +157,7 @@ dashboard:
     - { type: climate, entity: climate.living_room, name: Living Room, size: 2x2 }
     - { app: front-door } # a snapshot; tap for the live camera
     - weather # the `weather:` entity above
-    # One Lights group: tap toggles it, the corner arrow opens it in the app.
+    # One Lights group: its icon toggles it, a tap elsewhere opens it in the app.
     # Long-press any light widget for a brightness slider.
     - { app: lights, group: living-room }
     - { app: lights, group: bedroom }
@@ -174,7 +174,7 @@ dashboard:
     - { type: sensor, entity: sensor.outdoor_humidity, name: Humidity }
 
 # Things happening in Home Assistant that open an app on their own, over
-# everything (also wakes the screensaver).
+# everything (also wakes from standby).
 #   entity: an event.* entity (doorbell ring, button press) fires every time it
 #           changes. Any other entity fires when its state changes to `to`.
 #   open:   the app ID to open.
@@ -204,8 +204,34 @@ colors:
   - { name: Blue, rgb: [10, 132, 255] }
   - { name: Green, rgb: [48, 209, 88] }
 
-timings:
-  screensaverSeconds: 60
-
-# Hours (local time) during which the screensaver is dimmed.
-nightHours: { from: 22, to: 7 }
+# Standby: after `afterSeconds` without a touch, the screen shows faces. Swipe
+# sideways for the next one; tap to wake. A face's `slots` take the same entries
+# as the dashboard, for widgets that can sit on a face (all but tv, switch and
+# camera); a tap on one does that widget's action instead of waking. Each face
+# has its own keys next to `face:`. Faces: big-clock (slot: bottom), modular
+# (color; slots: right1-3), home-modular (color; slots: top1-3, bottom1-3), night.
+# Leave `standby` out for big-clock with the weather, and night from 22 to 7.
+standby:
+  afterSeconds: 60
+  faces:
+    - face: modular
+      color: '#ff9f0a'
+      slots:
+        right1: weather
+        right2: { type: climate, entity: climate.living_room, name: Living Room }
+        right3: { app: lights }
+    - face: home-modular
+      color: '#5e5ce6'
+      slots:
+        top1: clock
+        top2: { app: lights, group: living-room }
+        top3: { type: lock, entity: lock.front_door, name: Front Door }
+        bottom1: { type: scene, entity: scene.living_room_rest, name: Rest }
+        bottom2: { app: vacuum }
+        bottom3: { type: sensor, entity: sensor.outdoor_temperature, name: Outside }
+    - face: big-clock
+      slots: { bottom: weather }
+  # During these hours (local time), standby shows this face, dimmed.
+  night:
+    hours: { from: 22, to: 7 }
+    face: night

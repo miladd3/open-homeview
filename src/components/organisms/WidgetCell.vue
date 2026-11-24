@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onErrorCaptured, ref } from 'vue'
+import { computed, onBeforeUnmount, onErrorCaptured, onMounted, ref, useTemplateRef } from 'vue'
 
 import { hasScreen, quickOf, widgetOf } from '@/apps'
 import type { DashboardWidget } from '@/config/home'
+import type { WidgetMode } from '@/kit/define'
 import type { OpenAppOptions } from '@/stores/kiosk'
 import { useKioskStore } from '@/stores/kiosk'
 
-// One widget on the dashboard. Catches the widget's errors (a grey cell instead of
-// a broken page), opens its app's screen on `open`, and shows the type's quick
-// control over it on a long-press.
+// One widget on the dashboard or in a face slot. Catches the widget's errors (a
+// grey cell instead of a broken page), opens its app's screen on `open`, and
+// shows the type's quick control over it on a long-press.
+// In a face slot (`complication`), it sets `--cell` from its own height, which
+// DashboardHost sets for the grid.
 const LONG_PRESS_MS = 500
 const MOVE_TOLERANCE_PX = 10
 
-const props = defineProps<{ widget: DashboardWidget }>()
+const props = withDefaults(defineProps<{ widget: DashboardWidget; mode?: WidgetMode }>(), {
+  mode: 'dashboard',
+})
 
 const kiosk = useKioskStore()
 const failed = ref(false)
@@ -23,8 +28,20 @@ const settings = computed(() =>
   Object.keys(props.widget.settings).length ? props.widget.settings : undefined,
 )
 
+const root = useTemplateRef('root')
+const cell = ref<number>()
+let observer: ResizeObserver | undefined
+onMounted(() => {
+  if (props.mode !== 'complication' || !root.value) return
+  const rows = Number(props.widget.size.split('x')[1])
+  observer = new ResizeObserver(([entry]) => {
+    if (entry) cell.value = entry.contentRect.height / rows
+  })
+  observer.observe(root.value)
+})
+
 onErrorCaptured((error) => {
-  console.error(`[dashboard] the ${props.widget.app.type} widget failed:`, error)
+  console.error(`[${props.mode}] the ${props.widget.app.type} widget failed:`, error)
   failed.value = true
   return false
 })
@@ -65,13 +82,18 @@ function onClickCapture(event: MouseEvent) {
   longPressed = false
 }
 
-onBeforeUnmount(cancelPress)
+onBeforeUnmount(() => {
+  cancelPress()
+  observer?.disconnect()
+})
 </script>
 
 <template>
   <div
+    ref="root"
     class="widget-cell"
     :class="{ '-quick': showQuick }"
+    :style="cell ? { '--cell': `${cell}px` } : undefined"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
     @pointerup="cancelPress"
@@ -85,7 +107,7 @@ onBeforeUnmount(cancelPress)
       v-else
       :app="widget.app"
       :size="widget.size"
-      mode="dashboard"
+      :mode="mode"
       :settings="settings"
       @open="open"
     />

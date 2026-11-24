@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { isOverlay } from '@/apps'
 import { useConfigStore } from './config'
 
-/** An app shown over everything, even the screensaver (a camera). */
+/** An app shown over everything, even standby (a camera). */
 export interface Overlay {
   appId: string
   /** Set when an event opened it, e.g. "Someone is at the door". */
@@ -23,15 +23,16 @@ export const useKioskStore = defineStore('kiosk', () => {
   const activeAppId = ref<string | null>(null)
   const focus = ref<string>()
   const overlay = ref<Overlay | null>(null)
-  const screensaver = ref(false)
+  /** Showing standby faces (the screen is idle). */
+  const standby = ref(false)
 
   /**
    * Opens an app's screen: over everything for types like camera, else as a
-   * sheet. Also wakes the screen, so an event can open an app from the screensaver.
+   * sheet. Also wakes the screen, so an event can open an app from standby.
    */
   function openApp(appId: string, options: OpenAppOptions = {}) {
     const app = useConfigStore().home.apps.find((item) => item.id === appId)
-    screensaver.value = false
+    standby.value = false
     if (app && isOverlay(app)) {
       closeApp()
       overlay.value = { appId, message: options.message }
@@ -54,18 +55,18 @@ export const useKioskStore = defineStore('kiosk', () => {
   function sleep() {
     if (overlay.value) return
     closeApp()
-    screensaver.value = true
+    standby.value = true
   }
 
   function wake() {
-    screensaver.value = false
+    standby.value = false
   }
 
   return {
     activeAppId,
     focus,
     overlay,
-    screensaver,
+    standby,
     openApp,
     closeApp,
     closeOverlay,

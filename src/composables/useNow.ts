@@ -15,3 +15,8 @@ export function useNow() {
 
   return now
 }
+
+/** 09:41 */
+export function formatTime(date: Date): string {
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+}

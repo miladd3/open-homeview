@@ -65,7 +65,7 @@ export function finishApp(app: AppConfig, context: FinishContext): AppConfig {
   return finish ? finish(app, context) : app
 }
 
-/** Opens over everything, even the screensaver (a camera), rather than as a sheet. */
+/** Opens over everything, even standby (a camera), rather than as a sheet. */
 export function isOverlay(app: AppConfig): boolean {
   return definitionOf(app).overlay === true
 }
@@ -82,8 +82,8 @@ export function widgetSizes(app: AppConfig): WidgetSize[] {
 
 const components = new Map<string, Component>()
 
-/** One async component per type and part, loaded the first time it shows. */
-function lazy(key: string, load: () => Promise<Component | { default: Component }>) {
+/** One async component per key (a type's part, a face), loaded the first time it shows. */
+export function lazy(key: string, load: () => Promise<Component | { default: Component }>) {
   let component = components.get(key)
   if (!component) {
     component = defineAsyncComponent(load)

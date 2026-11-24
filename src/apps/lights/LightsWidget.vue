@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ArrowUpRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import {
@@ -12,8 +11,8 @@ import {
 } from '@/kit'
 import type { LightsApp } from '.'
 
-// With a `group` (a room): tap toggles its lights, the corner arrow opens the
-// Lights app at that group. Without: how many lights are on; tap opens the app.
+// With a `group` (a room): the icon toggles its lights, a tap anywhere else opens
+// the Lights app at that group. Without: how many lights are on; tap opens the app.
 const props = defineProps<{
   app: LightsApp
   size: WidgetSize
@@ -37,11 +36,6 @@ const detail = computed(() => {
   const count = props.size === '1x1' ? '' : ` · ${onCount.value} of ${lights.value.length}`
   return brightness.value ? `${brightness.value}%${count}` : 'On'
 })
-
-function tap() {
-  if (group.value) void toggle()
-  else emit('open')
-}
 </script>
 
 <template>
@@ -49,41 +43,30 @@ function tap() {
     class="lights-widget"
     :active="isOn"
     :color="rgb ? `rgb(${rgb.join(' ')})` : undefined"
-    @tap="tap"
+    @tap="emit('open', group && { focus: group.id })"
   >
-    <WidgetIcon :icon="group?.icon ?? app.icon" />
     <button
       v-if="group"
-      class="open"
+      class="toggle"
       type="button"
-      :aria-label="`Open ${group.name} in ${app.name}`"
-      @click.stop="emit('open', { focus: group.id })"
+      :aria-label="`Turn ${group.name} ${isOn ? 'off' : 'on'}`"
+      @click.stop="toggle()"
     >
-      <ArrowUpRight class="glyph" />
+      <WidgetIcon :icon="group.icon" />
     </button>
+    <WidgetIcon v-else :icon="app.icon" />
     <WidgetLabel :name="group?.name ?? app.name" :detail="detail" />
   </Widget>
 </template>
 
 <style scoped lang="scss">
-.lights-widget > .open {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: grid;
-  place-items: center;
-  width: max(var(--touch-min), calc(var(--u) * 38));
-  height: max(var(--touch-min), calc(var(--u) * 38));
+.lights-widget > .toggle {
+  align-self: flex-start;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
-  opacity: 0.6;
+  line-height: 0;
   cursor: pointer;
-
-  > .glyph {
-    width: calc(var(--u) * 16);
-    height: calc(var(--u) * 16);
-  }
 }
 </style>

@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useNow } from '@/composables/useNow'
+import { formatTime, useNow } from '@/composables/useNow'
 
 withDefaults(defineProps<{ size?: 'default' | 'hero' }>(), { size: 'default' })
 
 const now = useNow()
 
-const time = computed(() =>
-  now.value.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-)
+const time = computed(() => formatTime(now.value))
 const date = computed(() =>
   now.value.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
 )

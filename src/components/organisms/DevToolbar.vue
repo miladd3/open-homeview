@@ -4,13 +4,14 @@ import { onBeforeUnmount, onMounted } from 'vue'
 
 import type { MockConnection } from '@/ha/mock/MockConnection'
 import { useConfigStore } from '@/stores/config'
+import { useKioskStore } from '@/stores/kiosk'
 
 // Only rendered against the mock: lets you fire the kiosk.yaml events, which
-// would otherwise need real hardware. Keyboard: E = first event, S = screensaver.
+// would otherwise need real hardware. Keyboard: E = first event, S = standby.
 const props = defineProps<{ mock: MockConnection }>()
-const emit = defineEmits<{ sleep: [] }>()
 
 const { apps, events } = useConfigStore().home
+const kiosk = useKioskStore()
 const buttons = events.map((event) => ({
   event,
   label: apps.find((app) => app.id === event.appId)?.name ?? event.appId,
@@ -18,7 +19,7 @@ const buttons = events.map((event) => ({
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'e' && events[0]) props.mock.fireEvent(events[0])
-  if (event.key === 's') emit('sleep')
+  if (event.key === 's') kiosk.sleep()
 }
 
 onMounted(() => window.addEventListener('keydown', onKeydown))
@@ -38,7 +39,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     >
       <BellRing :size="16" /> {{ label }}
     </button>
-    <button class="action" type="button" @click="emit('sleep')"><Moon :size="16" /> Sleep</button>
+    <button class="action" type="button" @click="kiosk.sleep()"><Moon :size="16" /> Sleep</button>
   </div>
 </template>
 

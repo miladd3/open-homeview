@@ -1,6 +1,7 @@
-// The kit for an app type's index.ts: `defineAppType` and the kiosk.yaml field
-// helpers. Each folder in src/apps has `export default defineAppType(...)`;
-// src/apps/index.ts finds them all.
+// The kit for an app type's or face's index.ts: `defineAppType`, `defineFace`
+// and the kiosk.yaml field helpers. Each folder in src/apps has
+// `export default defineAppType(...)`, each in src/faces `export default
+// defineFace(...)`; src/apps/index.ts and src/faces/index.ts find them all.
 //
 // kiosk.yaml's schema is built from the types' index.ts files, so they must load
 // without the UI (tests, `npm run schema`): screens and widgets are lazy imports,
@@ -116,7 +117,7 @@ export interface AppTypeSpec<
   /** Any other keys, kept on the app as they are. */
   settings?: Settings
   /**
-   * Opens on the top layer, over the screensaver, instead of as a sheet (a camera).
+   * Opens on the top layer, over standby, instead of as a sheet (a camera).
    * Closes any open sheet, keeps the screen awake and gets the event `message`.
    */
   overlay?: boolean
@@ -193,3 +194,37 @@ export function defineAppType<
 export type AppOf<Definition> = Definition extends { mock: (app: infer App) => unknown }
   ? App
   : never
+
+/** A place for a widget on a face, in the sizes that fit it. The first fits best. */
+export interface FaceSlotSpec {
+  sizes: [WidgetSize, ...WidgetSize[]]
+}
+
+export interface FaceSpec<Options extends z.ZodRawShape> {
+  /** What kiosk.yaml's `face:` says, e.g. `modular`. Must match the folder name. */
+  id: string
+  name: string
+  /** One line for the editor's hover help. */
+  description: string
+  /**
+   * The face, as a lazy import: `() => import('./ModularFace.vue')`. Gets
+   * `options` and `night` (true during night hours) and puts `<FaceSlot>`s where
+   * the slots go.
+   */
+  screen: Loader
+  /** Keys of the face in kiosk.yaml, next to `face:`. */
+  options?: Options
+  /** Where widgets go, by name: `slots: { right1: weather }` in kiosk.yaml. */
+  slots?: Record<string, FaceSlotSpec>
+}
+
+export function defineFace<Options extends z.ZodRawShape = {}>(spec: FaceSpec<Options>) {
+  for (const key of ['face', 'slots'])
+    if (key in (spec.options ?? {}))
+      throw new Error(`Face ${spec.id}: an option can't be called ${key}`)
+  return spec
+}
+
+/** The options a face gets, e.g. `FaceOptionsOf<typeof modular>`. */
+export type FaceOptionsOf<Definition> =
+  Definition extends FaceSpec<infer Options> ? Simplify<Outputs<Options>> : never

@@ -38,15 +38,58 @@ describe('parseHomeConfig', () => {
         message: 'Someone is at the door',
       },
     ])
-    expect(testConfig.timings.screensaverAfterMs).toBe(60_000)
+    expect(testConfig.standby.afterMs).toBe(60_000)
+    expect(testConfig.standby.faces.map((f) => f.face)).toEqual([
+      'modular',
+      'home-modular',
+      'big-clock',
+    ])
+    expect(testConfig.standby.night).toMatchObject({
+      hours: { from: 22, to: 7 },
+      face: { face: 'night' },
+    })
   })
 
   it('fills in defaults for an empty file', () => {
     const config = parseHomeConfig(null)
     expect(config.dashboard.flat().map((w) => w.app.type)).toEqual(['clock'])
-    expect(config.nightHours).toEqual({ from: 22, to: 7 })
     expect(config.graphics).toBe('full')
-    expect(config.timings.configCheckMs).toBe(60_000)
+    expect(config.standby).toEqual({
+      afterMs: 60_000,
+      faces: [{ face: 'big-clock', options: {}, slots: {} }],
+      night: { hours: { from: 22, to: 7 }, face: { face: 'night', options: {}, slots: {} } },
+    })
+  })
+
+  it('fills big-clock with the weather by default, when there is a weather entity', () => {
+    const { faces } = parseHomeConfig({ weather: 'weather.home' }).standby
+    expect(faces).toHaveLength(1)
+    expect(faces[0]!.slots.bottom).toMatchObject({ app: { type: 'weather' }, size: '2x1' })
+  })
+
+  it('reads faces: short form, options with defaults, and slots like dashboard entries', () => {
+    const config = parseHomeConfig({
+      ...withGroups(room),
+      standby: {
+        faces: [
+          'night',
+          { face: 'modular', slots: { right1: { app: 'lights', group: 'den' }, right2: 'clock' } },
+          { face: 'home-modular', color: '#123456' },
+        ],
+      },
+    })
+    const [night, modular, homeModular] = config.standby.faces
+    expect(night).toEqual({ face: 'night', options: {}, slots: {} })
+    expect(modular!.options).toEqual({ color: '#ff9f0a' })
+    expect(modular!.slots.right1).toMatchObject({
+      app: { id: 'lights' },
+      size: '1x1',
+      settings: { group: 'den' },
+    })
+    // An inline slot entry is a hidden app, named by its path, like on the dashboard.
+    expect(modular!.slots.right2!.app.id).toBe('standby/faces/1/slots/right2')
+    expect(config.apps.some((app) => app.id === 'standby/faces/1/slots/right2')).toBe(true)
+    expect(homeModular!.options).toEqual({ color: '#123456' })
   })
 
   it('defaults group ids, icons and scene colors, and hands the lights the swatches', () => {
@@ -222,7 +265,49 @@ describe('parseHomeConfig', () => {
       { apps: [{ id: 'l', type: 'lights', name: 'L', groups: {} }] },
       'apps[0].groups must be a list',
     ],
-    [{ timings: { screensaverSeconds: 'soon' } }, 'timings.screensaverSeconds must be a number'],
+    [{ timings: {} }, 'timings is not a known key'],
+    [{ nightHours: {} }, 'nightHours is not a known key'],
+    [{ standby: { afterSeconds: 'soon' } }, 'standby.afterSeconds must be a number'],
+    [{ standby: { faces: ['big-clok'] } }, 'standby.faces[0] must be one of: '],
+    [{ standby: { faces: ['big-clok'] } }, 'Did you mean "big-clock"?'],
+    [{ standby: { faces: [{ face: 'modulr' }] } }, 'Did you mean "modular"?'],
+    [
+      { standby: { faces: [{ face: 'modular', colour: 'red' }] } },
+      'standby.faces[0].colour is not a known key. Did you mean "color"?',
+    ],
+    [
+      { standby: { faces: [{ face: 'modular', slots: { right: 'clock' } }] } },
+      'standby.faces[0].slots.right is not a known key. Did you mean "right1"?',
+    ],
+    [
+      { standby: { faces: [{ face: 'modular', slots: { right1: 'clok' } }] } },
+      'standby.faces[0].slots.right1 must be one of: ',
+    ],
+    [
+      {
+        apps: [camera],
+        standby: { faces: [{ face: 'modular', slots: { right1: { app: 'door' } } }] },
+      },
+      "standby.faces[0].slots.right1 camera can't sit on a face. These can: ",
+    ],
+    [
+      {
+        standby: {
+          faces: [{ face: 'big-clock', slots: { bottom: { type: 'lock', entity: 'lock.x' } } }],
+        },
+      },
+      'standby.faces[0].slots.bottom the bottom slot of big-clock takes 2x1, and lock widgets are 1x1',
+    ],
+    [
+      {
+        standby: {
+          faces: [{ face: 'modular', slots: { right1: { type: 'clock', size: '2x1' } } }],
+        },
+      },
+      'standby.faces[0].slots.right1.size the right1 slot of modular takes 1x1',
+    ],
+    [{ standby: { night: { face: 'nite' } } }, 'standby.night.face must be one of: '],
+    [{ standby: { night: { hours: { from: 25 } } } }, 'standby.night.hours.from'],
     [{ graphics: 'ultra' }, 'graphics must be one of: full, lite'],
     [{ dashboard: [['clok']] }, 'dashboard[0][0] must be one of: '],
     [{ dashboard: [['clok']] }, 'Did you mean "clock"?'],
