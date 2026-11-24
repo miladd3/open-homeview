@@ -6,5 +6,24 @@
   },
   "categories": {
     "correctness": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/apps/*/**"],
+      "excludeFiles": ["**/__tests__/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["*", "!vue", "!@lucide/vue", "!@/kit", "!@/kit/define", "!./*", "!."],
+                "message": "App folders import only from @/kit, @/kit/define, vue, @lucide/vue and their own folder."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
