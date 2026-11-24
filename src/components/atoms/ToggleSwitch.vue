@@ -26,7 +26,7 @@ const model = defineModel<boolean>({ required: true })
   padding: 0;
   border: 0;
   border-radius: var(--radius-pill);
-  background: rgb(120 120 128 / 36%);
+  background: var(--fill-strong);
   cursor: pointer;
   transition: background-color var(--duration-base) ease;
 
@@ -42,9 +42,11 @@ const model = defineModel<boolean>({ required: true })
     width: 42px;
     height: 42px;
     border-radius: var(--radius-pill);
+    // fixed colour: the knob is white in every theme
     background: #fff;
+    // fixed colour: the knob is white in every theme
     box-shadow: 0 3px 8px rgb(0 0 0 / 25%);
-    transition: transform var(--duration-base) var(--ease-spring);
+    transition: transform var(--duration-base) var(--motion-spring);
   }
 
   &:active > .knob {
@@ -52,7 +54,7 @@ const model = defineModel<boolean>({ required: true })
   }
 
   &.-on {
-    background: var(--color-success);
+    background: var(--success);
 
     > .knob {
       transform: translateX(34px);

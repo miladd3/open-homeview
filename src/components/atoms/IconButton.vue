@@ -23,15 +23,15 @@ withDefaults(
   width: var(--touch-min);
   height: var(--touch-min);
   padding: 0;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--surface-border);
   border-radius: var(--radius-pill);
-  background: var(--glass-bg);
-  color: var(--color-text);
+  background: var(--surface-bg);
+  color: var(--text-primary);
   cursor: pointer;
-  backdrop-filter: var(--glass-filter);
-  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--surface-filter);
+  -webkit-backdrop-filter: var(--surface-filter);
   transition:
-    transform var(--duration-fast) var(--ease-spring),
+    transform var(--duration-fast) var(--motion-spring),
     background-color var(--duration-base) ease,
     color var(--duration-base) ease;
 
@@ -46,17 +46,17 @@ withDefaults(
 
   &.-filled {
     border-color: transparent;
-    background: var(--color-accent);
+    background: var(--accent);
   }
 
   &.-danger {
     border-color: transparent;
-    background: var(--color-danger);
+    background: var(--danger);
   }
 
   &.-active {
-    background: var(--glass-active-bg);
-    color: var(--glass-active-text);
+    background: var(--widget-on-bg);
+    color: var(--widget-on-text);
   }
 
   > .icon {

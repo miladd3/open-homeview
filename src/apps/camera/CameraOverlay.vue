@@ -74,6 +74,7 @@ const remainingSeconds = computed(() => Math.ceil(remainingMs.value / 1000))
   flex-direction: column;
   justify-content: space-between;
   padding: var(--space-l);
+  // fixed colour: behind the camera image
   background: #000;
 
   > .feed {
@@ -104,7 +105,7 @@ const remainingSeconds = computed(() => Math.ceil(remainingMs.value / 1000))
   > .topbar > .titles > .live {
     padding: 4px 12px;
     border-radius: var(--radius-pill);
-    background: var(--color-danger);
+    background: var(--danger);
     font-size: 16px;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -137,21 +138,21 @@ const remainingSeconds = computed(() => Math.ceil(remainingMs.value / 1000))
     gap: var(--space-s);
     padding: var(--space-s) var(--space-m);
     border-radius: var(--radius-pill);
-    background: var(--glass-bg-strong);
+    background: var(--sheet-bg);
     font-size: 24px;
     font-weight: 600;
-    backdrop-filter: var(--glass-filter);
-    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--sheet-filter);
+    -webkit-backdrop-filter: var(--sheet-filter);
     animation: pulse 1.6s ease-in-out infinite;
   }
 
   > .bottombar > .message > .icon {
-    color: var(--color-on);
+    color: var(--on-color);
   }
 
   > .bottombar > .countdown {
     margin-left: auto;
-    color: var(--color-text-tertiary);
+    color: var(--text-tertiary);
     font-size: 18px;
   }
 }

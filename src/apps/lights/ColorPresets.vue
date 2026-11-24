@@ -41,9 +41,9 @@ function swatch(preset: ColorPreset) {
     border: 0;
     border-radius: var(--radius-pill);
     background: var(--swatch);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 25%);
+    box-shadow: inset 0 0 0 1px var(--text-tertiary);
     cursor: pointer;
-    transition: transform var(--duration-base) var(--ease-bounce);
+    transition: transform var(--duration-base) var(--motion-bounce);
 
     &:active {
       transform: scale(0.88);

@@ -34,7 +34,7 @@ const date = computed(() =>
   }
 
   > .date {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     font-size: 26px;
     font-weight: 500;
   }

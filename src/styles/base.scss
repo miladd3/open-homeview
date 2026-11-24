@@ -15,8 +15,8 @@ body,
 
 body {
   overflow: hidden;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--bg);
+  color: var(--text-primary);
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'tnum' 1;

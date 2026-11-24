@@ -104,9 +104,9 @@ onBeforeUnmount(() => clearTimeout(highlightTimer))
     flex-direction: column;
     gap: var(--space-m);
     padding: var(--space-m);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--surface-border);
     border-radius: var(--radius-l);
-    background: rgb(255 255 255 / 6%);
+    background: var(--fill);
     transition:
       background-color var(--duration-slow) ease,
       border-color var(--duration-slow) ease;
@@ -116,8 +116,8 @@ onBeforeUnmount(() => clearTimeout(highlightTimer))
     }
 
     &.-highlighted {
-      border-color: rgb(255 255 255 / 70%);
-      background: rgb(255 255 255 / 16%);
+      border-color: var(--text-secondary);
+      background: var(--fill-strong);
     }
   }
 
@@ -141,7 +141,7 @@ onBeforeUnmount(() => clearTimeout(highlightTimer))
   .group > .options {
     padding: var(--space-m);
     border-radius: var(--radius-m);
-    background: rgb(255 255 255 / 8%);
+    background: var(--fill);
   }
 }
 </style>

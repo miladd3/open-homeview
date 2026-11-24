@@ -9,7 +9,7 @@
   },
   "overrides": [
     {
-      "files": ["src/apps/*/**", "src/faces/*/**"],
+      "files": ["src/apps/*/**", "src/faces/*/**", "src/themes/*/**"],
       "excludeFiles": ["**/__tests__/**"],
       "rules": {
         "no-restricted-imports": [
@@ -18,7 +18,7 @@
             "patterns": [
               {
                 "group": ["*", "!vue", "!@lucide/vue", "!@/kit", "!@/kit/define", "!./*", "!."],
-                "message": "App and face folders import only from @/kit, @/kit/define, vue, @lucide/vue and their own folder."
+                "message": "App, face and theme folders import only from @/kit, @/kit/define, vue, @lucide/vue and their own folder."
               }
             ]
           }

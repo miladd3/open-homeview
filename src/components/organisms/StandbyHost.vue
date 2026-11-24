@@ -3,7 +3,7 @@ import { computed, defineComponent, h, type PropType, provide } from 'vue'
 
 import { useIdle } from '@/composables/useIdle'
 import { useNow } from '@/composables/useNow'
-import type { FaceEntry } from '@/config/home'
+import { type FaceEntry, isNight } from '@/config/home'
 import { faceScreenOf } from '@/faces'
 import { FACE_SLOTS } from '@/kit/FaceSlot'
 import { useConfigStore } from '@/stores/config'
@@ -20,11 +20,11 @@ const now = useNow()
 
 useIdle(standby.afterMs, kiosk.sleep)
 
-const night = computed(() => {
-  const hour = now.value.getHours()
-  const { from, to } = standby.night.hours
-  return from <= to ? hour >= from && hour < to : hour >= from || hour < to
-})
+// Faces sit on black, so they get the theme's dark mode (ThemeHost has set <html> up by now).
+const { theme, graphics } = document.documentElement.dataset
+const darkTheme = { 'data-theme': theme, 'data-graphics': graphics, 'data-mode': 'dark' }
+
+const night = computed(() => isNight(now.value, standby.night.hours))
 const faces = computed(() => (night.value ? [standby.night.face] : standby.faces))
 
 // Nudge the faces a few pixels every minute so static pixels don't burn in.
@@ -60,6 +60,7 @@ function onClick(event: MouseEvent) {
       v-if="kiosk.standby"
       class="standby-host"
       :class="{ '-night': night }"
+      v-bind="darkTheme"
       aria-label="Standby. Tap to wake."
       :style="{ '--shift': shift }"
       @click="onClick"
@@ -79,7 +80,10 @@ function onClick(event: MouseEvent) {
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
+  // fixed colour: faces keep their own backgrounds
   background: #000;
+  // Its own dark mode's colour: <body> resolved `color` with the page's mode.
+  color: var(--text-primary);
   cursor: pointer;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;

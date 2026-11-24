@@ -53,7 +53,8 @@ describe('parseHomeConfig', () => {
   it('fills in defaults for an empty file', () => {
     const config = parseHomeConfig(null)
     expect(config.dashboard.flat().map((w) => w.app.type)).toEqual(['clock'])
-    expect(config.graphics).toBe('full')
+    expect(config.theme).toEqual({ name: 'glass', graphics: 'full', mode: 'dark' })
+    expect(config.wallpaper).toBeUndefined()
     expect(config.standby).toEqual({
       afterMs: 60_000,
       faces: [{ face: 'big-clock', options: {}, slots: {} }],
@@ -194,10 +195,23 @@ describe('parseHomeConfig', () => {
     expect(page2![0]!.settings).toEqual({})
   })
 
+  it('reads a theme by name, or with its version, tint and mode', () => {
+    expect(parseHomeConfig({ theme: 'flat-light' }).theme).toEqual({
+      name: 'flat-light',
+      graphics: 'full',
+      mode: 'light',
+    })
+    expect(
+      parseHomeConfig({
+        theme: { name: 'liquid-glass', graphics: 'lite', tint: '#ff2d55', mode: 'auto' },
+      }).theme,
+    ).toEqual({ name: 'liquid-glass', graphics: 'lite', tint: '#ff2d55', mode: 'auto' })
+  })
+
   it('lists every problem, not just the first', () => {
     expect(() =>
-      parseHomeConfig({ graphics: 'ultra', ...withGroups({ ...room, icon: 'unicorn' }) }),
-    ).toThrow(/graphics must be one of: full, lite\napps\[0\]\.groups\[0\]\.icon "unicorn"/)
+      parseHomeConfig({ theme: 'glas', ...withGroups({ ...room, icon: 'unicorn' }) }),
+    ).toThrow(/theme must be one of: .*\napps\[0\]\.groups\[0\]\.icon "unicorn"/)
   })
 
   it.each([
@@ -308,7 +322,18 @@ describe('parseHomeConfig', () => {
     ],
     [{ standby: { night: { face: 'nite' } } }, 'standby.night.face must be one of: '],
     [{ standby: { night: { hours: { from: 25 } } } }, 'standby.night.hours.from'],
-    [{ graphics: 'ultra' }, 'graphics must be one of: full, lite'],
+    [{ graphics: 'lite' }, 'graphics is not a known key'],
+    [
+      { theme: 'glas' },
+      'theme must be one of: flat-light, glass, liquid-glass. Did you mean "glass"?',
+    ],
+    [{ theme: { name: 'glass', graphics: 'ultra' } }, 'theme.graphics must be one of: full, lite'],
+    [{ theme: { name: 'glass', mode: 'auto' } }, 'theme.mode glass has no light mode, only dark'],
+    [
+      { theme: { name: 'glass', tnt: '#fff' } },
+      'theme.tnt is not a known key. Did you mean "tint"?',
+    ],
+    [{ wallpaper: ['#000'] }, 'wallpaper must be two colors: [from, to]'],
     [{ dashboard: [['clok']] }, 'dashboard[0][0] must be one of: '],
     [{ dashboard: [['clok']] }, 'Did you mean "clock"?'],
     [

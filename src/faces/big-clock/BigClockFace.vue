@@ -19,6 +19,7 @@ defineProps<{ options: object; night: boolean }>()
   justify-content: center;
   gap: 4vh;
   height: 100%;
+  // fixed colour: faces keep their own backgrounds
   background: #000;
 
   > .slot {
@@ -27,7 +28,7 @@ defineProps<{ options: object; night: boolean }>()
   }
 
   &.-night {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
   }
 }
 </style>

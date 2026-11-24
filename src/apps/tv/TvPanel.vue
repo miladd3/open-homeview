@@ -127,7 +127,7 @@ const send = (command: string) =>
     gap: var(--space-xs);
     padding: var(--space-s);
     border-radius: var(--radius-pill);
-    background: rgb(255 255 255 / 8%);
+    background: var(--fill);
   }
 
   .remote > .dpad > .key {
@@ -139,11 +139,11 @@ const send = (command: string) =>
     background: transparent;
     cursor: pointer;
     transition:
-      transform var(--duration-fast) var(--ease-spring),
+      transform var(--duration-fast) var(--motion-spring),
       background-color var(--duration-fast) ease;
 
     &:active {
-      background: rgb(255 255 255 / 15%);
+      background: var(--fill-strong);
       transform: scale(0.9);
     }
 
@@ -165,7 +165,7 @@ const send = (command: string) =>
 
     &.-ok {
       grid-area: ok;
-      background: rgb(255 255 255 / 14%);
+      background: var(--fill-strong);
       font-size: 22px;
       font-weight: 700;
     }
@@ -190,7 +190,7 @@ const send = (command: string) =>
     align-items: center;
     padding: var(--space-xs);
     border-radius: var(--radius-pill);
-    background: rgb(255 255 255 / 8%);
+    background: var(--fill);
   }
 
   .remote > .side > .volume > .value {

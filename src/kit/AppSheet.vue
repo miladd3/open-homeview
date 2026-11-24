@@ -25,7 +25,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 <template>
   <section
-    class="app-sheet"
+    class="kit-sheet"
     role="dialog"
     aria-modal="true"
     :aria-label="app.name"
@@ -51,7 +51,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </template>
 
 <style scoped lang="scss">
-.app-sheet {
+.kit-sheet {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -77,10 +77,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     width: 60px;
     height: 60px;
     border-radius: 16px;
-    background: rgb(255 255 255 / 12%);
+    background: var(--fill-strong);
 
     &.-colored {
       background: linear-gradient(160deg, var(--icon-from), var(--icon-to));
+      // fixed colour: on the app's colours
       color: #fff;
     }
   }
@@ -97,7 +98,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   }
 
   > .header > .titles > .status {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     font-size: 20px;
   }
 
@@ -123,7 +124,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .sheet-leave-active {
   transition:
     opacity var(--duration-base) ease,
-    transform var(--duration-base) var(--ease-spring);
+    transform var(--duration-base) var(--motion-spring);
 }
 
 .sheet-enter-from,

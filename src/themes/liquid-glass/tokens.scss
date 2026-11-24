@@ -1,0 +1,77 @@
+[data-theme='liquid-glass'] {
+  color-scheme: dark;
+
+  --font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', system-ui, sans-serif;
+
+  --bg: #0b0c12;
+  --wallpaper-from: #1f4f7a;
+  --wallpaper-to: #6b3a7a;
+
+  --text-primary: #fff;
+  --text-secondary: rgb(255 255 255 / 62%);
+  --text-tertiary: rgb(255 255 255 / 38%);
+  --accent: var(--tint, #64a8ff);
+  --on-color: #ffd60a;
+  --success: #30d158;
+  --danger: #ff453a;
+
+  --fill: rgb(255 255 255 / 9%);
+  --fill-strong: rgb(255 255 255 / 16%);
+
+  // Clearer than glass: less frost, more colour, and a lit rim on every edge.
+  --surface-bg: rgb(255 255 255 / 5%);
+  --surface-border: rgb(255 255 255 / 22%);
+  --surface-filter: blur(14px) saturate(200%) brightness(1.08);
+
+  --widget-bg: rgb(255 255 255 / 6%);
+  --widget-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 50%), inset 0 -1px 1px rgb(255 255 255 / 15%),
+    inset 0 0 24px rgb(255 255 255 / 6%), 0 14px 36px rgb(0 0 0 / 30%);
+  --widget-on-bg: rgb(255 255 255 / 88%);
+  --widget-on-text: #15161c;
+
+  --sheet-bg: rgb(30 32 44 / 55%);
+  --sheet-filter: blur(30px) saturate(200%);
+  --sheet-shadow: inset 0 1px 1px rgb(255 255 255 / 45%), 0 30px 80px rgb(0 0 0 / 50%);
+  --scrim-bg: rgb(0 0 0 / 30%);
+  --scrim-filter: blur(18px) saturate(160%);
+
+  --radius-s: 18px;
+  --radius-m: 26px;
+  --radius-l: 38px;
+
+  --motion-spring: cubic-bezier(0.25, 1.25, 0.4, 1);
+  --motion-bounce: cubic-bezier(0.3, 1.7, 0.6, 1);
+}
+
+[data-theme='liquid-glass'][data-mode='light'] {
+  color-scheme: light;
+
+  --bg: #e9edf5;
+  --wallpaper-from: #a9c8f0;
+  --wallpaper-to: #f0bcd6;
+
+  --text-primary: #111218;
+  --text-secondary: rgb(17 18 24 / 60%);
+  --text-tertiary: rgb(17 18 24 / 35%);
+  --accent: var(--tint, #0a6cff);
+  --on-color: #ff9f0a;
+
+  --fill: rgb(0 0 0 / 6%);
+  --fill-strong: rgb(0 0 0 / 11%);
+
+  --surface-bg: rgb(255 255 255 / 22%);
+  --surface-border: rgb(255 255 255 / 70%);
+  --surface-filter: blur(14px) saturate(180%);
+
+  --widget-bg: rgb(255 255 255 / 18%);
+  --widget-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 90%), inset 0 -1px 1px rgb(255 255 255 / 40%),
+    0 10px 30px rgb(40 50 90 / 15%);
+  --widget-on-bg: #fff;
+
+  --sheet-bg: rgb(245 247 252 / 60%);
+  --sheet-shadow: inset 0 1px 1px rgb(255 255 255 / 90%), 0 30px 80px rgb(40 50 90 / 25%);
+  --scrim-bg: rgb(255 255 255 / 25%);
+}

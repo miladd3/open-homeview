@@ -31,7 +31,7 @@ defineProps<{ name: string; detail?: string }>()
   }
 
   > .detail {
-    color: var(--widget-detail-color, var(--color-text-secondary));
+    color: var(--widget-detail-color, var(--text-secondary));
     font-size: calc(var(--u) * 10);
     font-weight: 500;
   }

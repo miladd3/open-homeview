@@ -10,6 +10,7 @@ import { useTouchCursor } from '@/composables/useTouchCursor'
 import { useConfigStore } from '@/stores/config'
 import { useEntitiesStore } from '@/stores/entities'
 import { useKioskStore } from '@/stores/kiosk'
+import { useThemeHost } from '@/themes/ThemeHost'
 
 const config = useConfigStore()
 const kiosk = useKioskStore()
@@ -23,17 +24,19 @@ const overlayApp = computed(() => {
   const app = config.home.apps.find((app) => app.id === kiosk.overlay?.appId)
   return app && isOverlay(app) ? app : undefined
 })
-const wallpaper = computed(() => ({
-  '--wallpaper-from': config.home.wallpaper[0],
-  '--wallpaper-to': config.home.wallpaper[1],
-}))
+// kiosk.yaml's wallpaper, over the theme's.
+const wallpaper = computed(
+  () =>
+    config.home.wallpaper && {
+      '--wallpaper-from': config.home.wallpaper[0],
+      '--wallpaper-to': config.home.wallpaper[1],
+    },
+)
 
 useEvents((event) => kiosk.openApp(event.appId, { message: event.message }))
 useConfigReload()
 useTouchCursor()
-
-// `graphics: lite` swaps the blur tokens for solid fills (styles/tokens.scss).
-document.documentElement.classList.toggle('-lite', config.home.graphics === 'lite')
+useThemeHost(config.home)
 </script>
 
 <template>
@@ -80,14 +83,14 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
   // Apple Home style wallpaper: two soft color fields behind the frosted glass.
   background:
     radial-gradient(ellipse at 10% 0%, var(--wallpaper-from), transparent 65%),
-    radial-gradient(ellipse at 95% 100%, var(--wallpaper-to), transparent 60%), var(--color-bg);
+    radial-gradient(ellipse at 95% 100%, var(--wallpaper-to), transparent 60%), var(--bg);
 }
 
 .page-enter-active,
 .page-leave-active {
   transition:
     opacity var(--duration-base) ease,
-    transform var(--duration-base) var(--ease-spring);
+    transform var(--duration-base) var(--motion-spring);
 }
 
 .page-enter-from {
@@ -110,7 +113,7 @@ document.documentElement.classList.toggle('-lite', config.home.graphics === 'lit
 .overlay-leave-active {
   transition:
     opacity var(--duration-base) ease,
-    transform var(--duration-slow) var(--ease-spring);
+    transform var(--duration-slow) var(--motion-spring);
 }
 
 .overlay-enter-from,

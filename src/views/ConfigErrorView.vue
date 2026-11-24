@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TriangleAlert } from '@lucide/vue'
 
-import GlassPanel from '@/components/atoms/GlassPanel.vue'
+import { Surface } from '@/kit'
 
 // Shown instead of the app when kiosk.yaml can't be loaded or is invalid.
 defineProps<{ message: string; retrySeconds: number }>()
@@ -9,12 +9,12 @@ defineProps<{ message: string; retrySeconds: number }>()
 
 <template>
   <main class="config-error-view">
-    <GlassPanel class="panel" variant="strong">
+    <Surface class="panel">
       <TriangleAlert class="icon" :size="56" />
       <h1 class="title">Can't load kiosk.yaml</h1>
       <p class="message">{{ message }}</p>
       <p class="hint">Fix kiosk.yaml. Retrying in {{ retrySeconds }}s.</p>
-    </GlassPanel>
+    </Surface>
   </main>
 </template>
 
@@ -36,7 +36,7 @@ defineProps<{ message: string; retrySeconds: number }>()
   }
 
   > .panel > .icon {
-    color: var(--color-on);
+    color: var(--on-color);
   }
 
   > .panel > .title {
@@ -50,7 +50,7 @@ defineProps<{ message: string; retrySeconds: number }>()
   }
 
   > .panel > .hint {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     font-size: 18px;
   }
 }

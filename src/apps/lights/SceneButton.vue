@@ -23,17 +23,17 @@ defineProps<{
   gap: var(--space-s);
   min-height: 76px;
   padding: var(--space-s) var(--space-m) var(--space-s) var(--space-s);
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--surface-border);
   border-radius: var(--radius-m);
-  background: rgb(255 255 255 / 10%);
+  background: var(--fill);
   text-align: left;
   cursor: pointer;
   transition:
-    transform var(--duration-base) var(--ease-bounce),
+    transform var(--duration-base) var(--motion-bounce),
     background-color var(--duration-fast) ease;
 
   &:active {
-    background: rgb(255 255 255 / 20%);
+    background: var(--fill-strong);
     transform: scale(0.95);
   }
 
@@ -44,7 +44,7 @@ defineProps<{
     border-radius: var(--radius-pill);
     background: linear-gradient(135deg, var(--from), var(--to));
     box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 20%),
+      inset 0 0 0 1px var(--surface-border),
       0 6px 16px color-mix(in srgb, var(--to) 40%, transparent);
   }
 

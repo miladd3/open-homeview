@@ -17,8 +17,10 @@ const now = useNow()
   display: grid;
   place-items: center;
   height: 100%;
+  // fixed colour: faces keep their own backgrounds
   background: #000;
-  color: #d70015; // the face itself: dim red, easy on eyes in the dark
+  // fixed colour: dim red, easy on eyes in the dark
+  color: #d70015;
   font-size: 36vh;
   font-weight: 200;
   letter-spacing: -0.04em;

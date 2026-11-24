@@ -34,7 +34,7 @@ const emit = defineEmits<{ step: [direction: -1 | 1] }>()
     border-radius: var(--radius-pill);
     background: color-mix(in srgb, currentColor 12%, transparent);
     cursor: pointer;
-    transition: transform var(--duration-fast) var(--ease-spring);
+    transition: transform var(--duration-fast) var(--motion-spring);
 
     &:active {
       transform: scale(0.88);

@@ -141,13 +141,13 @@ function goTo(page: number) {
       height: 9px;
       margin: auto;
       border-radius: var(--radius-pill);
-      background: var(--color-text-tertiary);
+      background: var(--text-tertiary);
       content: '';
       transition: background-color var(--duration-fast) ease;
     }
 
     &.-current::after {
-      background: var(--color-text);
+      background: var(--text-primary);
     }
   }
 }

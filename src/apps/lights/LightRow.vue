@@ -119,11 +119,11 @@ function selectColor(preset: ColorPreset) {
     padding: 0;
     border: 0;
     border-radius: var(--radius-pill);
-    background: rgb(255 255 255 / 14%);
-    color: var(--color-text-secondary);
+    background: var(--fill-strong);
+    color: var(--text-secondary);
     cursor: pointer;
     transition:
-      transform var(--duration-fast) var(--ease-spring),
+      transform var(--duration-fast) var(--motion-spring),
       background-color var(--duration-base) ease;
 
     &:active {
@@ -151,7 +151,7 @@ function selectColor(preset: ColorPreset) {
   }
 
   > .main > .texts > .status {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     font-size: 16px;
   }
 
@@ -176,7 +176,8 @@ function selectColor(preset: ColorPreset) {
   }
 
   &.-on > .main > .icon {
-    background: var(--glow, var(--color-on));
+    background: var(--glow, var(--on-color));
+    // fixed colour: on the light's own colour
     color: #1c1c1e;
   }
 

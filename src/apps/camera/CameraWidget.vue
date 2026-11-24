@@ -26,8 +26,11 @@ const emit = defineEmits<{ open: [] }>()
     position: relative;
     margin: auto calc(var(--u) * -9) calc(var(--u) * -9);
     padding: calc(var(--u) * 14) calc(var(--u) * 9) calc(var(--u) * 9);
+    // fixed colour: over the camera image
     background: linear-gradient(transparent, rgb(0 0 0 / 60%));
+    // fixed colour: over the camera image
     color: #fff;
+    // fixed colour: over the camera image
     --widget-detail-color: rgb(255 255 255 / 75%);
   }
 }

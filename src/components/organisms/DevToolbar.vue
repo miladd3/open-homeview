@@ -53,8 +53,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   align-items: center;
   gap: var(--space-xs);
   padding: var(--space-xs);
+  // fixed colour: dev mode only
   border: 1px dashed rgb(255 255 255 / 25%);
   border-radius: var(--radius-pill);
+  // fixed colour: dev mode only
   background: rgb(0 0 0 / 60%);
   font-size: 13px;
   opacity: 0.6;
@@ -65,7 +67,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
   > .badge {
     padding: 2px 10px;
-    color: var(--color-on);
+    color: var(--on-color);
     font-weight: 700;
     text-transform: uppercase;
   }
@@ -77,6 +79,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     padding: 4px 10px;
     border: 0;
     border-radius: var(--radius-pill);
+    // fixed colour: dev mode only
     background: rgb(255 255 255 / 12%);
     cursor: pointer;
   }

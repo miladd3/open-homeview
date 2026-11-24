@@ -13,11 +13,19 @@
 # Colors: any CSS color. Gradients take two colors: [from, to].
 # The Home Assistant auth proxy only allows the entity IDs listed in this file.
 
-wallpaper: ['#2a2f6b', '#7a3d5c']
+# The look. Themes: glass (the default), liquid-glass, flat-light. Short form:
+# `theme: flat-light`.
+theme:
+  name: glass
+  # full: frosted-glass blur everywhere. lite: solid fills instead, much lighter
+  # on the Raspberry Pi's GPU. Switch and compare on the wall screen.
+  graphics: lite
+  # tint: '#7d6bff'   # one accent colour for the whole UI
+  # mode: auto        # light, dark, or auto (dark during standby's night hours),
+  #                   # for themes that have both
 
-# full: frosted-glass blur everywhere. lite: solid fills instead, much lighter on
-# the Raspberry Pi's GPU. Switch and compare on the wall screen.
-graphics: lite
+# Two background colours, [from, to], over the theme's own.
+# wallpaper: ['#2a2f6b', '#7a3d5c']
 
 weather: weather.forecast_home
 

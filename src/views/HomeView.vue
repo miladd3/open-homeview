@@ -81,16 +81,19 @@ const configNotice = computed(() => {
     padding: 0 var(--space-s);
     border: 0;
     border-radius: var(--radius-pill);
+    // fixed colour: a status pill reads the same in every theme
     color: #1c1c1e;
     font-size: 15px;
     font-weight: 600;
 
     &.-offline {
-      background: var(--color-danger);
+      background: var(--danger);
+      // fixed colour: a status pill reads the same in every theme
       color: #fff;
     }
 
     &.-warning {
+      // fixed colour: a status pill reads the same in every theme
       background: #ff9f0a;
       cursor: pointer;
     }

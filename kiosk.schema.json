@@ -3,35 +3,100 @@
   "type": "object",
   "properties": {
     "wallpaper": {
-      "default": [
-        "#2a2f6b",
-        "#7a3d5c"
-      ],
-      "description": "Background colors.",
-      "type": "array",
-      "prefixItems": [
+      "description": "Two background colors: [from, to]. Default: the theme's.",
+      "anyOf": [
         {
-          "type": "string",
-          "minLength": 1,
-          "description": "Any CSS color, e.g. \"#ff9f0a\"."
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Any CSS color, e.g. \"#ff9f0a\"."
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Any CSS color, e.g. \"#ff9f0a\"."
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "theme": {
+      "default": "glass",
+      "description": "The look: a theme name, or { name, graphics, tint, mode }.",
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "flat-light",
+                "glass",
+                "liquid-glass"
+              ],
+              "description": "flat-light: Flat and light: grey widgets, lavender when on (the tint). glass: Frosted glass over a dark wallpaper. liquid-glass: Clear glass with bright edges, rounder corners and springy motion."
+            },
+            "graphics": {
+              "default": "full",
+              "description": "lite: no live blur or shadows, for weak GPUs like a Raspberry Pi.",
+              "type": "string",
+              "enum": [
+                "full",
+                "lite"
+              ]
+            },
+            "tint": {
+              "description": "One accent colour for the whole UI.",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mode": {
+              "description": "auto: dark during standby's night hours. Default: the theme's own.",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "light",
+                    "dark",
+                    "auto"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
         },
         {
           "type": "string",
-          "minLength": 1,
-          "description": "Any CSS color, e.g. \"#ff9f0a\"."
+          "enum": [
+            "flat-light",
+            "glass",
+            "liquid-glass"
+          ],
+          "description": "flat-light: Flat and light: grey widgets, lavender when on (the tint). glass: Frosted glass over a dark wallpaper. liquid-glass: Clear glass with bright edges, rounder corners and springy motion."
         }
-      ],
-      "items": false,
-      "minItems": 2,
-      "maxItems": 2
-    },
-    "graphics": {
-      "default": "full",
-      "description": "lite: no live blur or shadows, for weak GPUs like a Raspberry Pi.",
-      "type": "string",
-      "enum": [
-        "full",
-        "lite"
       ]
     },
     "weather": {

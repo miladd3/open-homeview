@@ -27,14 +27,14 @@ const clamped = computed(() => Math.min(100, Math.max(0, props.value)))
   height: 10px;
   overflow: hidden;
   border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 12%);
+  background: var(--fill-strong);
 
   > .fill {
     width: var(--progress);
     height: 100%;
     border-radius: inherit;
-    background: var(--progress-color, var(--color-success));
-    transition: width var(--duration-slow) var(--ease-spring);
+    background: var(--progress-color, var(--success));
+    transition: width var(--duration-slow) var(--motion-spring);
   }
 }
 </style>

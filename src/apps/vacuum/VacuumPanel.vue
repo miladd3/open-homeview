@@ -81,13 +81,13 @@ const { state, progress, battery, status, isCleaning, isPaused, press, command }
     justify-content: center;
     gap: var(--space-m);
     padding: var(--space-l);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--surface-border);
     border-radius: var(--radius-l);
-    background: rgb(255 255 255 / 6%);
+    background: var(--fill);
   }
 
   .panes > .pane > .label {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     font-size: 22px;
   }
 
@@ -105,14 +105,15 @@ const { state, progress, battery, status, isCleaning, isPaused, press, command }
     gap: var(--space-s);
     border: 0;
     border-radius: var(--radius-m);
-    background: rgb(255 255 255 / 12%);
+    background: var(--fill-strong);
     font-size: 24px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform var(--duration-fast) var(--ease-spring);
+    transition: transform var(--duration-fast) var(--motion-spring);
 
     &.-primary {
       background: linear-gradient(160deg, var(--from), var(--to));
+      // fixed colour: on the app's colours
       color: #fff;
     }
 

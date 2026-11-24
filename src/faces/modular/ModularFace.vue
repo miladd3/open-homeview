@@ -33,6 +33,7 @@ const date = computed(() =>
   gap: 5vh;
   height: 100%;
   padding: 6vh;
+  // fixed colour: faces keep their own backgrounds
   background: #000;
 
   > .time {
@@ -60,7 +61,7 @@ const date = computed(() =>
   }
 
   &.-night {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
   }
 }
 </style>

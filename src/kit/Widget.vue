@@ -34,17 +34,17 @@ const emit = defineEmits<{ tap: [] }>()
   height: 100%;
   overflow: hidden;
   padding: calc(var(--u) * 9);
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--surface-border);
   border-radius: var(--radius-l);
-  background: var(--glass-bg);
-  box-shadow: var(--shadow-soft);
-  color: var(--color-text);
+  background: var(--widget-bg);
+  box-shadow: var(--widget-shadow);
+  color: var(--text-primary);
   container-type: size;
   cursor: pointer;
-  backdrop-filter: var(--glass-filter);
-  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--surface-filter);
+  -webkit-backdrop-filter: var(--surface-filter);
   transition:
-    transform var(--duration-base) var(--ease-spring),
+    transform var(--duration-base) var(--motion-spring),
     background-color var(--duration-base) ease,
     color var(--duration-base) ease;
 
@@ -54,12 +54,12 @@ const emit = defineEmits<{ tap: [] }>()
 
   // Widget parts read these, so they follow the active look wherever they sit.
   &.-active {
-    --widget-icon-bg: var(--widget-tint, var(--color-on));
-    --widget-icon-color: #1c1c1e;
-    --widget-detail-color: rgb(60 60 67 / 70%);
+    --widget-icon-bg: var(--widget-tint, var(--on-color));
+    --widget-icon-color: var(--widget-on-text);
+    --widget-detail-color: color-mix(in srgb, var(--widget-on-text) 65%, transparent);
 
-    background: var(--glass-active-bg);
-    color: var(--glass-active-text);
+    background: var(--widget-on-bg);
+    color: var(--widget-on-text);
   }
 }
 </style>

@@ -30,7 +30,7 @@ const weather = useWeather(() => props.app.weatherEntityId)
   > .icon {
     width: calc(var(--u) * 30);
     height: calc(var(--u) * 30);
-    color: var(--color-on);
+    color: var(--on-color);
   }
 }
 </style>

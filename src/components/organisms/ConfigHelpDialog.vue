@@ -46,7 +46,7 @@ const emit = defineEmits<{ close: [] }>()
   }
 
   .section > .text {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     font-size: 19px;
     line-height: 1.4;
   }
@@ -63,14 +63,14 @@ const emit = defineEmits<{ close: [] }>()
   .section > .ids > .id {
     padding: var(--space-s) var(--space-m);
     border-radius: var(--radius-m);
-    background: rgb(255 255 255 / 8%);
+    background: var(--fill);
     font-family: ui-monospace, monospace;
     font-size: 18px;
   }
 
   code {
     font-family: ui-monospace, monospace;
-    color: var(--color-text);
+    color: var(--text-primary);
   }
 }
 </style>

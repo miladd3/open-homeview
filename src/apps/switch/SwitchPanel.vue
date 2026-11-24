@@ -86,13 +86,13 @@ const toggle = () =>
     align-items: center;
     justify-content: center;
     gap: var(--space-s);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--surface-border);
     border-radius: var(--radius-l);
-    background: rgb(255 255 255 / 8%);
-    color: var(--color-text-secondary);
+    background: var(--fill);
+    color: var(--text-secondary);
     cursor: pointer;
     transition:
-      transform var(--duration-base) var(--ease-spring),
+      transform var(--duration-base) var(--motion-spring),
       background-color var(--duration-base) ease,
       color var(--duration-base) ease;
 
@@ -107,6 +107,7 @@ const toggle = () =>
 
     &.-on {
       background: linear-gradient(160deg, var(--from), var(--to));
+      // fixed colour: on the app's colours
       color: #fff;
     }
   }
@@ -132,13 +133,13 @@ const toggle = () =>
     gap: var(--space-s);
     padding: var(--space-m);
     border-radius: var(--radius-m);
-    background: rgb(255 255 255 / 8%);
+    background: var(--fill);
     font-size: 20px;
   }
 
   .layout > .sensors > .sensor > .name {
     flex: 1;
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
   }
 
   .layout > .sensors > .sensor > .value {

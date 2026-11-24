@@ -4,7 +4,7 @@ An Apple Home style wall dashboard for [Home Assistant](https://www.home-assista
 
 - **One container, one YAML file.** Rooms, scenes, apps and entity IDs all live in `kiosk.yaml`. Edit it and the screen reloads by itself.
 - **Your Home Assistant token never reaches the browser.** The container keeps it and only lets the screen see and control the entities listed in `kiosk.yaml`. Anyone who walks up to the wall screen can't do more than that.
-- **Fast on a Raspberry Pi.** Taps update right away, and `graphics: lite` turns off blur effects for weak GPUs.
+- **Fast on a Raspberry Pi.** Taps update right away, and every theme has a lite version without blur effects for weak GPUs.
 
 ## Quick start
 
@@ -54,7 +54,7 @@ Rooms are the Lights app's groups. On a group's widget, the round icon toggles i
 
 ## Configuration: `kiosk.yaml`
 
-Apps, the dashboard, scenes, events, weather, color swatches, wallpaper and standby faces all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
+Apps, the dashboard, scenes, events, weather, color swatches, the theme, wallpaper and standby faces all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
 
 - In Docker it is mounted at `/config/kiosk.yaml`. Until it exists, the kiosk shows the example, with a **kiosk.yaml** notice on the Home screen explaining what to do.
 - The kiosk checks it every minute and **reloads itself when it changes**, so you never have to touch the screen. Edit the file and the wall screen updates within a minute.
@@ -67,6 +67,8 @@ Apps, the dashboard, scenes, events, weather, color swatches, wallpaper and stan
 - Without `dashboard`, the kiosk makes one: the clock, the weather, each Lights group, then every app. Add `hidden: true` to leave an app out of it (it then only opens from an event).
 - `events` open an app on their own, over everything (and out of standby). Each names an `entity` and the app to `open`. An `event.*` entity (a doorbell ring, a button press) fires every time it changes, optionally only for some `eventTypes`. Any other entity fires when it changes `to` a state, e.g. `binary_sensor.driveway_motion` with `to: 'on'`. A `message` shows on the camera view (e.g. "Someone is at the door").
 - `standby` is what the screen shows when idle: after `afterSeconds` (default 60), the `faces` you swipe through, then a tap wakes to Home. A face entry is `night` or `{ face: modular, color: '#ff9f0a', slots: { right1: weather } }`: the face's own keys sit next to `face:`, and `slots` take dashboard entries for widgets that can sit on a face (a tap on one does the widget's action, not wake). During `night.hours` (default 22 to 7) only `night.face` shows (default `night`), dimmed. Without `standby`: big-clock with the weather. Faces: `big-clock`, `modular`, `home-modular`, `night`. Faces move a few pixels every minute against burn-in.
+- `theme` is the look: `glass` (the default), `liquid-glass` or `flat-light` (HomeView's light lavender look). The long form `{ name: glass, graphics: lite, tint: '#7d6bff', mode: auto }` picks the `lite` version (no blur or soft shadows, for the Pi), one accent colour for the whole UI, and `light`, `dark` or `auto` (dark during standby's night hours) for themes that have both. Standby faces stay on black and use the theme's dark mode.
+- `wallpaper: [from, to]` puts your own two colours behind everything, over the theme's.
 - An app's entity IDs go right on the app (`camera: camera.front_door`, `player: media_player.tv`).
 - The `lights` app lists `groups` (usually rooms), each with a `name`, an optional `icon`, its `lights` and optional `scenes`. A group's `id` defaults to its name in lower case with dashes (`Living Room` → `living-room`).
 
@@ -130,17 +132,18 @@ server/                   # Node server (runs .ts directly): serves the page + k
 src/
   apps/                 # every app type, one folder each (see "App types" below)
   faces/                # every standby face, one folder each (see "Faces" below)
+  themes/               # every theme, one folder each (see "Themes" below); ThemeHost puts the theme on <html>
   config/               # kiosk.yaml schema + validation (home.ts), shared schema helpers (fields.ts), loader, icons
   ha/                   # HaConnection interface, LiveConnection (home-assistant-js-websocket), mock
-  kit/                  # what app and face folders may use: AppSheet, Widget parts, FaceSlot, controls, useEntity/useService, defineAppType/defineFace (define.ts)
+  kit/                  # what app, face and theme folders may use: AppSheet, Surface, Widget parts, FaceSlot, controls, useEntity/useService, defineAppType/defineFace/defineTheme (define.ts)
   stores/               # config (parsed kiosk.yaml), entities (HA state), kiosk (open app, overlay apps, standby)
   composables/          # useConfigReload, useIdle, useEvents, …
   components/
-    atoms/              # GlassPanel, IconButton, RangeSlider, ProgressBar, ToggleSwitch
+    atoms/              # IconButton, RangeSlider, ProgressBar, ToggleSwitch
     molecules/          # ClockDisplay, CameraFeed
     organisms/          # DashboardHost (the grid), WidgetCell, DefaultWidget, StandbyHost (faces), DevToolbar, ConfigHelpDialog
   views/                # HomeView, ConfigErrorView
-  styles/               # design tokens (CSS custom properties) + base reset
+  styles/               # sizes and timings shared by every theme + base reset
 ```
 
 Every component talks to Home Assistant only through `HaConnection` (`subscribeEntities`, `subscribeStatus`, `callService`). `LiveConnection` and the mock both implement it, and `src/ha/connection.ts` picks one.
@@ -180,7 +183,27 @@ src/faces/modular/
 
 Face folders follow the same import rule as app folders. To add one: copy `night/`, then run `npm run schema`.
 
+### Themes
+
+Every folder in [`src/themes/`](src/themes/) is a theme, found on its own ([`src/themes/index.ts`](src/themes/index.ts)); the folder name is the theme id.
+
+```
+src/themes/liquid-glass/
+  index.ts          # export default defineTheme({ id, name, description, modes, graphics })
+  tokens.scss       # every theme token under [data-theme='liquid-glass'], other modes under [data-mode='light']
+  lite.scss         # the lite version, under [data-graphics='lite']: only what is slow (blur, shadows, springy motion)
+  material.scss     # optional: may style only .kit-surface, .kit-widget and .kit-sheet
+```
+
+- `modes` lists the modes `tokens.scss` styles; the first is the default. `graphics: ['full', 'lite']` means it ships a `lite.scss`. Without one, `graphics: lite` uses the full version and logs a warning.
+- [`src/themes/glass/tokens.scss`](src/themes/glass/tokens.scss) lists every token, with comments; every theme sets all of them (a test checks it). Themes change colours, material, radius, font, shadows and motion curves, never layout or sizes.
+- `ThemeHost` sets `data-theme`, `data-mode` and `data-graphics` on `<html>`, and `--tint` from kiosk.yaml (tokens use it as `var(--tint, <default>)`).
+
+Theme folders follow the same import rule as app folders. To add one: copy `glass/`.
+
 ### Styling conventions
+
+- Colours come from theme tokens (`var(--text-secondary)`, `var(--fill)`…), so every component works in every theme. A test fails on a literal colour outside `src/themes/`, unless the line above it says why with `// fixed colour: …` (a face's black background, text over a camera image, white on an app's own colours).
 
 - `<style scoped lang="scss">` in every component.
 - The root element and every important child get a class (`.light-card`, `> .name`, `> .status`) so parents can restyle children.

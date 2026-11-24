@@ -110,7 +110,7 @@ function onKeydown(event: KeyboardEvent) {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-l);
-  background: rgb(255 255 255 / 12%);
+  background: var(--fill-strong);
   cursor: pointer;
   touch-action: none;
   outline: none;
@@ -118,13 +118,13 @@ function onKeydown(event: KeyboardEvent) {
   // show a scrollbar and clipped the rounded corners.
 
   &:focus-visible {
-    box-shadow: 0 0 0 3px var(--color-accent);
+    box-shadow: 0 0 0 3px var(--accent);
   }
 
   > .fill {
     position: absolute;
     inset: auto 0 0;
-    background: var(--slider-fill, var(--color-text));
+    background: var(--slider-fill, var(--text-primary));
   }
 
   &.-vertical > .fill {
@@ -133,8 +133,8 @@ function onKeydown(event: KeyboardEvent) {
 
   &:not(.-dragging) > .fill {
     transition:
-      height var(--duration-base) var(--ease-spring),
-      width var(--duration-base) var(--ease-spring);
+      height var(--duration-base) var(--motion-spring),
+      width var(--duration-base) var(--motion-spring);
   }
 
   &.-horizontal > .fill {
@@ -147,7 +147,7 @@ function onKeydown(event: KeyboardEvent) {
     inset: auto 0 var(--space-m);
     display: flex;
     justify-content: center;
-    color: var(--slider-icon-color, #8e8e93);
+    color: var(--slider-icon-color, var(--text-secondary));
     pointer-events: none;
   }
 

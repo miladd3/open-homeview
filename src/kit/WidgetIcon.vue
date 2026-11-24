@@ -20,7 +20,7 @@ defineProps<{ icon: IconName }>()
   width: calc(var(--u) * 30);
   height: calc(var(--u) * 30);
   border-radius: var(--radius-pill);
-  background: var(--widget-icon-bg, rgb(255 255 255 / 14%));
+  background: var(--widget-icon-bg, var(--fill-strong));
   color: var(--widget-icon-color, inherit);
   transition:
     background-color var(--duration-base) ease,

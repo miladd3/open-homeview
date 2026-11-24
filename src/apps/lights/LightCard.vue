@@ -60,7 +60,7 @@ const glow = computed(() => (rgb.value ? `rgb(${rgb.value.join(' ')})` : undefin
   padding: var(--space-s);
   border: 2px solid transparent;
   border-radius: var(--radius-m);
-  background: rgb(255 255 255 / 8%);
+  background: var(--fill);
   transition:
     background-color var(--duration-base) ease,
     border-color var(--duration-base) ease;
@@ -73,11 +73,11 @@ const glow = computed(() => (rgb.value ? `rgb(${rgb.value.join(' ')})` : undefin
     padding: 0;
     border: 0;
     border-radius: var(--radius-pill);
-    background: rgb(255 255 255 / 14%);
-    color: var(--color-text-secondary);
+    background: var(--fill-strong);
+    color: var(--text-secondary);
     cursor: pointer;
     transition:
-      transform var(--duration-fast) var(--ease-spring),
+      transform var(--duration-fast) var(--motion-spring),
       background-color var(--duration-base) ease;
 
     &:active {
@@ -107,18 +107,19 @@ const glow = computed(() => (rgb.value ? `rgb(${rgb.value.join(' ')})` : undefin
   }
 
   > .open > .status {
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     font-size: 16px;
   }
 
   &.-on > .toggle {
-    background: var(--glow, var(--color-on));
+    background: var(--glow, var(--on-color));
+    // fixed colour: on the light's own colour
     color: #1c1c1e;
   }
 
   &.-selected {
-    border-color: rgb(255 255 255 / 60%);
-    background: rgb(255 255 255 / 14%);
+    border-color: var(--text-secondary);
+    background: var(--fill-strong);
   }
 
   &.-unavailable {

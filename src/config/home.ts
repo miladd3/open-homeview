@@ -10,15 +10,16 @@ import { z } from 'zod'
 
 import { type AppConfig, appSchema, appTypeOf, appTypes, finishApp, widgetSizes } from '@/apps'
 import { faceTypes } from '@/faces'
+import { themeTypes } from '@/themes'
 import { WIDGET_SIZES, type WidgetSize } from '@/kit/define'
 import type { LightsApp } from '@/apps/lights'
 import type { Rgb } from '@/ha/lightColor'
-import type { FinishContext } from '@/kit/define'
+import type { FinishContext, ThemeGraphics, ThemeMode } from '@/kit/define'
 import {
+  color,
   didYouMean,
   entity,
   type Gradient,
-  gradient,
   list,
   object,
   optional,
@@ -73,10 +74,21 @@ export interface StandbyConfig {
   }
 }
 
-export interface HomeConfig {
-  wallpaper: Gradient
+/** The look: a theme from src/themes, its version and mode. */
+export interface ThemeConfig {
+  name: string
   /** `lite` drops live blur and shadows, for weak GPUs like the Pi's. */
-  graphics: 'full' | 'lite'
+  graphics: ThemeGraphics
+  /** One accent colour for the whole UI. Unset: the theme's own. */
+  tint?: string
+  /** `auto`: dark during standby's night hours, light otherwise. */
+  mode: ThemeMode | 'auto'
+}
+
+export interface HomeConfig {
+  /** Unset: the theme's wallpaper. */
+  wallpaper?: Gradient
+  theme: ThemeConfig
   weatherEntityId?: string
   /** The apps in kiosk.yaml, then the ones written inline on the dashboard (hidden). */
   apps: AppConfig[]
@@ -84,6 +96,12 @@ export interface HomeConfig {
   dashboard: DashboardWidget[][]
   events: EventConfig[]
   standby: StandbyConfig
+}
+
+/** Whether `date` falls in the night hours (`from` may be later than `to`: 22 to 7). */
+export function isNight(date: Date, { from, to }: StandbyConfig['night']['hours']): boolean {
+  const hour = date.getHours()
+  return from <= to ? hour >= from && hour < to : hour >= from || hour < to
 }
 
 const DEFAULT_COLORS: ColorPreset[] = [
@@ -355,13 +373,53 @@ function generateDashboard(
   ]
 }
 
+// ---- theme ----
+
+const themeIds = themeTypes.map((theme) => theme.id)
+
+const themeName = z
+  .enum(themeIds as [string, ...string[]], {
+    error: (issue) => `must be one of: ${themeIds.join(', ')}.${didYouMean(issue.input, themeIds)}`,
+  })
+  .meta({ description: themeTypes.map((t) => `${t.id}: ${t.description}`).join(' ') })
+
+const theme = z
+  .union([
+    object({
+      name: themeName,
+      graphics: z
+        .enum(['full', 'lite'], { error: 'must be one of: full, lite' })
+        .default('full')
+        .meta({ description: 'lite: no live blur or shadows, for weak GPUs like a Raspberry Pi.' }),
+      tint: optional(color).meta({ description: 'One accent colour for the whole UI.' }),
+      mode: optional(
+        z.enum(['light', 'dark', 'auto'], { error: 'must be one of: light, dark, auto' }),
+      ).meta({ description: "auto: dark during standby's night hours. Default: the theme's own." }),
+    }),
+    themeName.transform((name) => ({ name, graphics: 'full' as const })),
+  ])
+  .transform((raw, ctx): ThemeConfig => {
+    const { modes } = themeTypes.find((t) => t.id === raw.name)!
+    const mode = 'mode' in raw && raw.mode ? raw.mode : modes[0]
+    const missing = (mode === 'auto' ? (['dark', 'light'] as const) : [mode]).find(
+      (m) => !modes.includes(m),
+    )
+    if (missing)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['mode'],
+        message: `${raw.name} has no ${missing} mode, only ${modes.join(' and ')}`,
+      })
+    return { ...raw, mode }
+  })
+  .meta({ description: 'The look: a theme name, or { name, graphics, tint, mode }.' })
+
 /** The whole kiosk.yaml, as written (before defaults and renames). */
 export const kioskYamlSchema = object({
-  wallpaper: gradient(['#2a2f6b', '#7a3d5c']).meta({ description: 'Background colors.' }),
-  graphics: z
-    .enum(['full', 'lite'], { error: 'must be one of: full, lite' })
-    .default('full')
-    .meta({ description: 'lite: no live blur or shadows, for weak GPUs like a Raspberry Pi.' }),
+  wallpaper: optional(z.tuple([color, color], { error: 'must be two colors: [from, to]' })).meta({
+    description: "Two background colors: [from, to]. Default: the theme's.",
+  }),
+  theme: theme.prefault('glass'),
   weather: optional(entity('weather')),
   apps: list(appSchema).meta({
     description: 'Your apps. Each has a widget, a full-screen view, or both.',
@@ -461,7 +519,7 @@ export const kioskYamlSchema = object({
     }
     return {
       wallpaper: raw.wallpaper,
-      graphics: raw.graphics,
+      theme: raw.theme,
       weatherEntityId: raw.weather,
       apps: [...apps, ...inline],
       dashboard,

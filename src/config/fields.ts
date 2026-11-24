@@ -99,7 +99,7 @@ export function icon(fallback: IconName) {
     .meta({ description: 'Icon name (Lucide). The full list is in src/config/icons.ts.' })
 }
 
-const color = text.meta({ description: 'Any CSS color, e.g. "#ff9f0a".' })
+export const color = text.meta({ description: 'Any CSS color, e.g. "#ff9f0a".' })
 
 export function gradient(fallback: Gradient) {
   return z

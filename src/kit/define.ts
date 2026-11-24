@@ -1,7 +1,7 @@
-// The kit for an app type's or face's index.ts: `defineAppType`, `defineFace`
-// and the kiosk.yaml field helpers. Each folder in src/apps has
-// `export default defineAppType(...)`, each in src/faces `export default
-// defineFace(...)`; src/apps/index.ts and src/faces/index.ts find them all.
+// The kit for an app type's, face's or theme's index.ts: `defineAppType`,
+// `defineFace`, `defineTheme` and the kiosk.yaml field helpers. Each folder in
+// src/apps, src/faces and src/themes has `export default define…(...)`; the
+// index.ts next to them finds them all.
 //
 // kiosk.yaml's schema is built from the types' index.ts files, so they must load
 // without the UI (tests, `npm run schema`): screens and widgets are lazy imports,
@@ -228,3 +228,26 @@ export function defineFace<Options extends z.ZodRawShape = {}>(spec: FaceSpec<Op
 /** The options a face gets, e.g. `FaceOptionsOf<typeof modular>`. */
 export type FaceOptionsOf<Definition> =
   Definition extends FaceSpec<infer Options> ? Simplify<Outputs<Options>> : never
+
+export type ThemeMode = 'dark' | 'light'
+export type ThemeGraphics = 'full' | 'lite'
+
+export interface ThemeSpec {
+  /** What kiosk.yaml's `theme:` says, e.g. `glass`. Must match the folder name. */
+  id: string
+  name: string
+  /** One line for the editor's hover help. */
+  description: string
+  /** The modes its tokens.scss styles. The first is the default. */
+  modes: [ThemeMode, ...ThemeMode[]]
+  /** The versions it ships: `lite` needs a lite.scss. */
+  graphics: [ThemeGraphics, ...ThemeGraphics[]]
+}
+
+/**
+ * A theme: CSS variables in the folder's tokens.scss (and lite.scss, material.scss),
+ * under `[data-theme='<id>']`. This only describes it.
+ */
+export function defineTheme(spec: ThemeSpec) {
+  return spec
+}

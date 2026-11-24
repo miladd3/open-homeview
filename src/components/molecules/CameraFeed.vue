@@ -78,6 +78,7 @@ onBeforeUnmount(() => {
 .camera-feed {
   position: relative;
   overflow: hidden;
+  // fixed colour: behind the camera image
   background: #0b0d10;
 
   > .stream {
@@ -100,6 +101,7 @@ onBeforeUnmount(() => {
   > .scene {
     position: absolute;
     inset: -20%;
+    // fixed colour: a stand-in camera image
     background:
       radial-gradient(circle at 30% 40%, rgb(120 140 170 / 35%), transparent 40%),
       radial-gradient(circle at 70% 70%, rgb(200 160 110 / 25%), transparent 45%),
@@ -111,7 +113,7 @@ onBeforeUnmount(() => {
   > .caption {
     position: absolute;
     inset: auto 0 var(--space-xl);
-    color: var(--color-text-tertiary);
+    color: var(--text-tertiary);
     font-size: 18px;
     text-align: center;
   }

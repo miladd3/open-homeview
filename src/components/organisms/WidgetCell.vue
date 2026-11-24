@@ -131,8 +131,8 @@ onBeforeUnmount(() => {
     place-items: center;
     height: 100%;
     border-radius: var(--radius-l);
-    background: rgb(142 142 147 / 30%);
-    color: var(--color-text-secondary);
+    background: var(--fill-strong);
+    color: var(--text-secondary);
     font-size: 18px;
   }
 
@@ -155,8 +155,8 @@ onBeforeUnmount(() => {
     z-index: 2;
     overflow: hidden;
     border-radius: var(--radius-l);
-    background: var(--color-bg);
-    box-shadow: var(--shadow-dialog);
+    background: var(--bg);
+    box-shadow: var(--sheet-shadow);
   }
 
   > .quick > * {
