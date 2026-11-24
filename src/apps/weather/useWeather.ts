@@ -10,10 +10,9 @@ import {
   Wind,
   type LucideIcon,
 } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, type MaybeRefOrGetter } from 'vue'
 
-import { useConfigStore } from '@/stores/config'
-import { useEntitiesStore } from '@/stores/entities'
+import { useEntity } from '@/kit'
 
 const conditions: Record<string, { label: string; icon: LucideIcon }> = {
   'clear-night': { label: 'Clear', icon: Moon },
@@ -33,19 +32,25 @@ const conditions: Record<string, { label: string; icon: LucideIcon }> = {
   'windy-variant': { label: 'Windy', icon: Wind },
 }
 
-export function useWeather() {
-  const store = useEntitiesStore()
-  const config = useConfigStore()
-  const weather = computed(() => store.get(config.home.weatherEntityId))
+/** A weather.* entity as an icon, a rounded temperature and a label. Null while unknown. */
+export function useWeather(entityId: MaybeRefOrGetter<string | undefined>) {
+  const weather = useEntity(entityId)
 
   return computed(() => {
     const entity = weather.value
     if (!entity) return null
     const condition = conditions[entity.state] ?? { label: entity.state, icon: Cloud }
+    const { humidity, wind_speed: wind, wind_speed_unit: windUnit } = entity.attributes
     return {
       ...condition,
       temperature: Math.round(Number(entity.attributes.temperature)),
       unit: String(entity.attributes.temperature_unit ?? '°'),
+      detail: [
+        humidity !== undefined && `Humidity ${String(humidity)}%`,
+        wind !== undefined && `Wind ${String(wind)} ${String(windUnit ?? '')}`.trim(),
+      ]
+        .filter(Boolean)
+        .join(' · '),
     }
   })
 }

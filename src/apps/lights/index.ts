@@ -1,6 +1,7 @@
 import {
   type AppOf,
   defineAppType,
+  didYouMean,
   entity,
   type Gradient,
   gradient,
@@ -66,7 +67,7 @@ const lightGroup = object({
 export type LightGroup = z.output<typeof lightGroup>
 
 /** Every light on its own, sorted into groups (rooms, floors, lamps vs. spots…). */
-export const lights = defineAppType({
+const lights = defineAppType({
   type: 'lights',
   description: 'Every light on its own, sorted into groups (usually rooms) with their scenes.',
   entities: {},
@@ -86,9 +87,27 @@ export const lights = defineAppType({
       )
       .meta({ description: 'Sections of the app, e.g. one per room.' }),
   },
-  // No chip: the Home screen's Lights chip already shows how many lights are on.
   screen: () => import('./LightsPanel.vue'),
+  // Before `widget`, so its `check` sees the finished app (TypeScript infers in order).
   finish: (app, { colors }) => ({ ...app, colorPresets: colors }),
+  // One group (a room), or the whole home without `group`.
+  widget: {
+    widgetScreen: () => import('./LightsWidget.vue'),
+    quick: () => import('./LightsQuick.vue'),
+    sizes: ['1x1', '2x1'],
+    complication: true,
+    settings: {
+      group: optional(text).meta({
+        description:
+          'A group ID, e.g. living-room: tap toggles its lights. Leave out for the whole home.',
+      }),
+    },
+    check: (app, { group }) => {
+      const ids = app.groups.map((g) => g.id)
+      if (group && !ids.includes(group))
+        return `group "${group}" is not a group of ${app.id}.${didYouMean(group, ids)}`
+    },
+  },
   // Every third light starts on. Names come from the entity ID (light.wall_lamp_1 → Wall lamp 1).
   mock: (app) => [
     ...app.groups
@@ -104,5 +123,7 @@ export const lights = defineAppType({
     ),
   ],
 })
+
+export default lights
 
 export type LightsApp = AppOf<typeof lights>

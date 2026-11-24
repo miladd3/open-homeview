@@ -6,19 +6,33 @@ import { useEntitiesStore } from '@/stores/entities'
 // Live camera view. Full-quality WebRTC video when HA supports it, with HA's MJPEG
 // stream shown meanwhile and kept as the fallback (it's only ~2 fps snapshots).
 // The kiosk's auth proxy adds the token, so a plain <img> works for MJPEG.
-// Against the mock it shows a placeholder scene instead.
-const props = defineProps<{ entityId: string }>()
+// `still` shows a snapshot every few seconds instead (a dashboard widget), which
+// costs the Pi almost nothing. Against the mock it shows a placeholder scene.
+const STILL_REFRESH_MS = 10_000
+
+const props = defineProps<{ entityId: string; still?: boolean }>()
 
 const store = useEntitiesStore()
 const isMock = store.mock() !== null
-const src = computed(() => `${import.meta.env.BASE_URL}api/camera_proxy_stream/${props.entityId}`)
+const stillAt = ref(Date.now())
+const src = computed(() =>
+  props.still
+    ? `${import.meta.env.BASE_URL}api/camera_proxy/${props.entityId}?t=${stillAt.value}`
+    : `${import.meta.env.BASE_URL}api/camera_proxy_stream/${props.entityId}`,
+)
 
 const video = useTemplateRef('video')
 const isLive = ref(false)
 let stop: (() => void) | null = null
 
+let stillTimer: ReturnType<typeof setInterval> | undefined
+
 onMounted(() => {
   if (isMock) return
+  if (props.still) {
+    stillTimer = setInterval(() => (stillAt.value = Date.now()), STILL_REFRESH_MS)
+    return
+  }
   stop = store.watchCamera(props.entityId, {
     onStream(stream) {
       if (video.value) video.value.srcObject = stream
@@ -32,7 +46,10 @@ onMounted(() => {
   })
 })
 
-onBeforeUnmount(() => stop?.())
+onBeforeUnmount(() => {
+  stop?.()
+  clearInterval(stillTimer)
+})
 </script>
 
 <template>
@@ -41,6 +58,7 @@ onBeforeUnmount(() => stop?.())
       <!-- MJPEG is dropped once video frames arrive (not just audio), so only one stream runs. -->
       <img v-if="!isLive" class="stream" :src="src" alt="" />
       <video
+        v-if="!still"
         ref="video"
         class="stream -video"
         autoplay
@@ -51,7 +69,7 @@ onBeforeUnmount(() => stop?.())
     </template>
     <template v-else>
       <div class="scene" aria-hidden="true" />
-      <p class="caption">Mock camera feed</p>
+      <p v-if="!still" class="caption">Mock camera feed</p>
     </template>
   </div>
 </template>

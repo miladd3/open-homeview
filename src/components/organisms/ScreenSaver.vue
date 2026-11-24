@@ -4,13 +4,13 @@ import { computed } from 'vue'
 import ClockDisplay from '@/components/molecules/ClockDisplay.vue'
 import WeatherSummary from '@/components/molecules/WeatherSummary.vue'
 import { useNow } from '@/composables/useNow'
-import { useWeather } from '@/composables/useWeather'
+import { useWeather } from '@/apps/weather/useWeather'
 import { useConfigStore } from '@/stores/config'
 
 const emit = defineEmits<{ wake: [] }>()
 
 const now = useNow()
-const weather = useWeather()
+const weather = useWeather(() => useConfigStore().home.weatherEntityId)
 const { nightHours } = useConfigStore().home
 
 const isNight = computed(() => {

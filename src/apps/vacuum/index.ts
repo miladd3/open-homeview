@@ -1,10 +1,7 @@
-import { computed } from 'vue'
-
-import { useVacuum } from './useVacuum'
 import { type AppOf, defineAppType, entity, mockEntity, optional } from '@/kit/define'
 
 /** A robot vacuum: start, pause, dock, plus optional cleaning buttons and sensors. */
-export const vacuum = defineAppType({
+const vacuum = defineAppType({
   type: 'vacuum',
   description: 'A robot vacuum.',
   entities: {
@@ -16,9 +13,10 @@ export const vacuum = defineAppType({
     battery: optional(entity('sensor', 'Battery level in %.')),
   },
   screen: () => import('./VacuumPanel.vue'),
-  status: (app) => {
-    const vacuum = useVacuum(app)
-    return computed(() => ({ text: vacuum.status.value, active: vacuum.isCleaning.value }))
+  widget: {
+    widgetScreen: () => import('./VacuumWidget.vue'),
+    sizes: ['1x1', '2x1'],
+    complication: true,
   },
   mock: ({ name, entities: e }) => [
     mockEntity(e.vacuum, 'docked', { friendly_name: name, fan_speed: 'balanced' }),
@@ -33,5 +31,7 @@ export const vacuum = defineAppType({
     ...(e.battery ? [mockEntity(e.battery, '100', { unit_of_measurement: '%' })] : []),
   ],
 })
+
+export default vacuum
 
 export type VacuumApp = AppOf<typeof vacuum>

@@ -8,8 +8,11 @@
 
 import { z } from 'zod'
 
-import { type AppConfig, appSchema, finishApp } from '@/apps'
+import { type AppConfig, appSchema, appTypeOf, appTypes, finishApp, widgetSizes } from '@/apps'
+import { WIDGET_SIZES, type WidgetSize } from '@/kit/define'
+import type { LightsApp } from '@/apps/lights'
 import type { Rgb } from '@/ha/lightColor'
+import type { FinishContext } from '@/kit/define'
 import {
   didYouMean,
   entity,
@@ -42,12 +45,23 @@ export interface EventConfig {
   message?: string
 }
 
+/** One widget on the dashboard: an app (from `apps:` or written inline) at a size. */
+export interface DashboardWidget {
+  app: AppConfig
+  size: WidgetSize
+  /** The widget's own keys, e.g. `group` for a Lights widget. */
+  settings: Record<string, unknown>
+}
+
 export interface HomeConfig {
   wallpaper: Gradient
   /** `lite` drops live blur and shadows, for weak GPUs like the Pi's. */
   graphics: 'full' | 'lite'
   weatherEntityId?: string
+  /** The apps in kiosk.yaml, then the ones written inline on the dashboard (hidden). */
   apps: AppConfig[]
+  /** Pages of widgets. Generated from the apps when kiosk.yaml has no `dashboard:`. */
+  dashboard: DashboardWidget[][]
   events: EventConfig[]
   timings: {
     screensaverAfterMs: number
@@ -111,6 +125,128 @@ const colorPreset = object({
   return z.NEVER
 })
 
+const dashboardEntry = z
+  .union([
+    text.meta({ description: 'A type with no keys, e.g. clock or weather.' }),
+    z.looseObject({
+      app: optional(text).meta({ description: 'The ID of an app in `apps:`.' }),
+      type: optional(text).meta({
+        description: `An app type written right here, with its keys. One of: ${appTypes.map((t) => t.type).join(', ')}.`,
+      }),
+      size: optional(
+        z.enum(WIDGET_SIZES, { error: `must be one of: ${WIDGET_SIZES.join(', ')}` }),
+      ).meta({ description: "Columns x rows. Default: the widget's first size." }),
+    }),
+  ])
+  .meta({
+    description:
+      'A widget: `clock`, `{ app: <id> }` for an app in `apps:`, or `{ type: <type>, ... }` written inline.',
+  })
+
+type DashboardEntry = z.output<typeof dashboardEntry>
+type Issue = { message: string; path: PropertyKey[] } & Partial<z.core.$ZodIssue>
+
+/**
+ * Turns `dashboard:` entries into widgets. Inline entries become apps of their
+ * own, added to `inline`. Problems go to `report`, with their path.
+ */
+function resolveDashboard(
+  pages: DashboardEntry[][],
+  apps: AppConfig[],
+  context: FinishContext,
+  inline: AppConfig[],
+  report: (issue: Issue) => void,
+): DashboardWidget[][] {
+  const appIds = apps.map((app) => app.id)
+  const typeNames = appTypes.map((t) => t.type)
+  const reportAll = (issues: z.core.$ZodIssue[], at: PropertyKey[]) =>
+    issues.forEach((issue) => report({ ...issue, path: [...at, ...issue.path] }))
+
+  function resolve(entry: DashboardEntry, at: PropertyKey[]): DashboardWidget | undefined {
+    const { app: appId, type, size, ...rest } = typeof entry === 'string' ? { type: entry } : entry
+    let app: AppConfig | undefined
+    let settings: Record<string, unknown> = rest
+    if (appId !== undefined) {
+      if (type !== undefined) return void report({ path: at, message: 'has both `app` and `type`' })
+      app = apps.find((item) => item.id === appId)
+      if (!app)
+        return void report({
+          path: [...at, 'app'],
+          message: `"${appId}" is not an app ID.${didYouMean(appId, appIds)}`,
+        })
+    } else {
+      if (type === undefined)
+        return void report({ path: at, message: 'needs `app` (an app ID) or `type`' })
+      const definition = appTypeOf(type)
+      if (!definition)
+        return void report({
+          path: typeof entry === 'string' ? at : [...at, 'type'],
+          message: `must be one of: ${typeNames.join(', ')}.${didYouMean(type, typeNames)}`,
+        })
+      // The widget's own keys (like a Lights widget's `group`) are not the app's.
+      const widgetKeys = Object.keys(definition.widget?.settings ?? {})
+      const own = Object.fromEntries(Object.entries(rest).filter(([k]) => !widgetKeys.includes(k)))
+      settings = Object.fromEntries(Object.entries(rest).filter(([k]) => widgetKeys.includes(k)))
+      const parsed = definition.inlineSchema.safeParse({ type, ...own }, { reportInput: true })
+      if (!parsed.success) return void reportAll(parsed.error.issues, at)
+      app = finishApp({ ...parsed.data, id: `dashboard/${at.slice(1).join('/')}` }, context)
+      inline.push(app)
+    }
+
+    const definition = appTypeOf(app.type)!
+    const sizes = widgetSizes(app)
+    if (size && !sizes.includes(size))
+      report({
+        path: [...at, 'size'],
+        message: `${app.type} widgets are ${sizes.join(' or ')}, not ${size}.${didYouMean(size, sizes)}`,
+      })
+    const parsed = object(definition.widget?.settings ?? {}).safeParse(settings, {
+      reportInput: true,
+    })
+    if (!parsed.success) return void reportAll(parsed.error.issues, at)
+    const problem = definition.widget?.check?.(app, parsed.data)
+    if (problem) report({ path: at, message: problem })
+    return { app, size: size ?? sizes[0]!, settings: parsed.data }
+  }
+
+  return pages.map((page, p) =>
+    page.flatMap((entry, i) => resolve(entry, ['dashboard', p, i]) ?? []),
+  )
+}
+
+/** Without `dashboard:`: the clock, the weather, each Lights group, then every other app. */
+function generateDashboard(
+  apps: AppConfig[],
+  context: FinishContext,
+  inline: AppConfig[],
+): DashboardWidget[][] {
+  const builtIn = (type: string) => {
+    const parsed = appTypeOf(type)!.inlineSchema.parse({ type })
+    const app = finishApp({ ...parsed, id: `dashboard/${type}` }, context)
+    inline.push(app)
+    return { app, size: widgetSizes(app)[0]!, settings: {} }
+  }
+  const shown = apps.filter((app) => !app.hidden)
+  return [
+    [
+      builtIn('clock'),
+      ...(context.weather ? [builtIn('weather')] : []),
+      ...shown.flatMap((app) =>
+        app.type === 'lights'
+          ? (app as LightsApp).groups.map((group) => ({
+              app,
+              size: widgetSizes(app)[0]!,
+              settings: { group: group.id },
+            }))
+          : [],
+      ),
+      ...shown
+        .filter((app) => app.type !== 'lights')
+        .map((app) => ({ app, size: widgetSizes(app)[0]!, settings: {} })),
+    ],
+  ]
+}
+
 /** The whole kiosk.yaml, as written (before defaults and renames). */
 export const kioskYamlSchema = object({
   wallpaper: gradient(['#2a2f6b', '#7a3d5c']).meta({ description: 'Background colors.' }),
@@ -119,7 +255,15 @@ export const kioskYamlSchema = object({
     .default('full')
     .meta({ description: 'lite: no live blur or shadows, for weak GPUs like a Raspberry Pi.' }),
   weather: optional(entity('weather')),
-  apps: list(appSchema).meta({ description: 'App icons on the Home screen.' }),
+  apps: list(appSchema).meta({
+    description: 'Your apps. Each has a widget, a full-screen view, or both.',
+  }),
+  dashboard: optional(
+    z.array(z.array(dashboardEntry).min(1, 'needs at least one widget')).min(1, 'needs a page'),
+  ).meta({
+    description:
+      'Pages of widgets on the Home screen, in order. Leave out for one made from your apps.',
+  }),
   events: list(event).meta({
     description:
       'Things in Home Assistant that open an app on their own, e.g. a ring opens the camera.',
@@ -176,18 +320,29 @@ export const kioskYamlSchema = object({
         })
     })
   })
-  .transform((raw): HomeConfig => ({
-    wallpaper: raw.wallpaper,
-    graphics: raw.graphics,
-    weatherEntityId: raw.weather,
-    apps: raw.apps.map((item) => finishApp(item, { colors: raw.colors ?? DEFAULT_COLORS })),
-    events: raw.events,
-    timings: {
-      screensaverAfterMs: raw.timings.screensaverSeconds * 1000,
-      configCheckMs: raw.timings.configCheckSeconds * 1000,
-    },
-    nightHours: raw.nightHours,
-  }))
+  .transform((raw, ctx): HomeConfig => {
+    const context: FinishContext = { colors: raw.colors ?? DEFAULT_COLORS, weather: raw.weather }
+    const apps = raw.apps.map((item) => finishApp(item, context))
+    const inline: AppConfig[] = []
+    const dashboard = raw.dashboard
+      ? resolveDashboard(raw.dashboard, apps, context, inline, (issue) =>
+          ctx.addIssue({ code: 'custom', ...issue } as z.core.$ZodRawIssue),
+        )
+      : generateDashboard(apps, context, inline)
+    return {
+      wallpaper: raw.wallpaper,
+      graphics: raw.graphics,
+      weatherEntityId: raw.weather,
+      apps: [...apps, ...inline],
+      dashboard,
+      events: raw.events,
+      timings: {
+        screensaverAfterMs: raw.timings.screensaverSeconds * 1000,
+        configCheckMs: raw.timings.configCheckSeconds * 1000,
+      },
+      nightHours: raw.nightHours,
+    }
+  })
 
 // ---- errors ----
 

@@ -2,7 +2,7 @@ import { onOffStatus } from '@/kit'
 import { type AppOf, defineAppType, entity, list, mockEntity } from '@/kit/define'
 
 /** A big on/off button for any on/off entity, with optional sensor readings. */
-export const switchApp = defineAppType({
+const switchApp = defineAppType({
   type: 'switch',
   description: 'Any on/off entity, with optional sensors.',
   entities: {
@@ -21,5 +21,7 @@ export const switchApp = defineAppType({
     ),
   ],
 })
+
+export default switchApp
 
 export type SwitchApp = AppOf<typeof switchApp>

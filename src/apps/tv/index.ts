@@ -2,7 +2,7 @@ import { onOffStatus } from '@/kit'
 import { type AppOf, defineAppType, entity, mockEntity, optional } from '@/kit/define'
 
 /** A TV remote: power, volume, and a d-pad when there is a remote entity. */
-export const tv = defineAppType({
+const tv = defineAppType({
   type: 'tv',
   description: 'A TV remote.',
   entities: {
@@ -20,5 +20,7 @@ export const tv = defineAppType({
     ...(e.remote ? [mockEntity(e.remote, 'off', { friendly_name: name })] : []),
   ],
 })
+
+export default tv
 
 export type TvApp = AppOf<typeof tv>

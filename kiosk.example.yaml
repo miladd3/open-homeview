@@ -5,8 +5,8 @@
 # Copy this file to kiosk.yaml and replace the entity IDs with your own (find
 # them in Home Assistant under Settings → Devices & services → Entities).
 #
-# Everything the wall screen shows lives here: apps, rooms, scenes and the
-# Home Assistant entity IDs behind them. The kiosk checks this file every
+# Everything the wall screen shows lives here: apps, the dashboard, scenes and
+# the Home Assistant entity IDs behind them. The kiosk checks this file every
 # minute and reloads itself when it changes. No restart or rebuild needed.
 #
 # Icons: any name from src/config/icons.ts (e.g. sofa, bed, laptop, bot, tv).
@@ -21,14 +21,14 @@ graphics: lite
 
 weather: weather.forecast_home
 
-# Apps open full screen from their icon on the Home screen; ✕ or Esc closes
-# them. Add `hidden: true` to leave an app off the Home screen, so it only
-# opens from an event (see `events` below).
+# Your apps. Each has a widget on the dashboard, and most open full screen when
+# you tap it (✕ or Esc closes them).
 # Types: vacuum, tv, switch (any on/off entity plus optional sensors), lights,
-# camera.
+# camera. These have only a widget: clock, weather; they are usually written
+# right on the dashboard (see below).
 apps:
   # Every light on its own, sorted into groups. Groups are the rooms: each is a
-  # room tile on the Home screen and a section of the app, with its scenes.
+  # section of the app with its scenes, and can be a widget on the dashboard.
   # `id` defaults to the name in lower case with dashes (Living Room → living-room).
   - id: lights
     type: lights
@@ -141,6 +141,30 @@ apps:
     camera: camera.front_door
     # Closes after this long without a touch.
     autoCloseSeconds: 60
+
+# The Home screen: pages of widgets, swiped sideways. Widgets flow into a grid
+# of 5 x 3 cells (on 1280x720) in order; `size` is columns x rows and must be
+# one the widget offers (the first is the default). A page that is full goes
+# on to the next. Leave `dashboard` out for one made from your apps: the clock,
+# the weather, each Lights group, then every app without `hidden: true`.
+#   clock                     a type with no keys
+#   { app: vacuum }           the widget of an app above
+#   weather                   a widget-only type written right here
+dashboard:
+  - # page 1
+    - clock
+    - { app: front-door } # a snapshot; tap for the live camera
+    - weather # the `weather:` entity above
+    # One Lights group: tap toggles it, the corner arrow opens it in the app.
+    # Long-press it for a brightness slider.
+    - { app: lights, group: living-room }
+    - { app: lights, group: bedroom }
+    - { app: lights, group: office }
+    - { app: vacuum, size: 2x1 }
+    - { app: lights } # every light: how many are on
+    - { app: tv }
+  - # page 2
+    - { app: adguard }
 
 # Things happening in Home Assistant that open an app on their own, over
 # everything (also wakes the screensaver).

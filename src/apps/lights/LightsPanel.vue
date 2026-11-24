@@ -10,7 +10,7 @@ import SceneButton from './SceneButton.vue'
 // Every light, one section per group (like the Hue app's rooms): the group's
 // own row, its scenes, then its lights as a row of cards. Tapping a card's
 // name shows that light's options under the row. `focus` scrolls to one group and
-// highlights it for a moment (a room tile opens it that way).
+// highlights it for a moment (a Lights widget opens it that way).
 const props = defineProps<{ app: LightsApp; focus?: string }>()
 const emit = defineEmits<{ close: [] }>()
 

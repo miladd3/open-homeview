@@ -1,20 +1,22 @@
 // The kit for an app type's index.ts: `defineAppType` and the kiosk.yaml field
-// helpers. Each folder in src/apps calls `defineAppType` once; src/apps/index.ts
-// lists them all.
+// helpers. Each folder in src/apps has `export default defineAppType(...)`;
+// src/apps/index.ts finds them all.
 //
 // kiosk.yaml's schema is built from the types' index.ts files, so they must load
-// without the UI (tests, `npm run schema`): screens are lazy imports, loaded the
-// first time they open.
+// without the UI (tests, `npm run schema`): screens and widgets are lazy imports,
+// loaded the first time they show.
 
 import type { Component, ComputedRef } from 'vue'
 import { z } from 'zod'
 
-import { type Gradient, gradient, icon, object, text } from '@/config/fields'
+import { type Gradient, gradient, icon, object, optional, text } from '@/config/fields'
 import type { ColorPreset } from '@/config/home'
+import type { IconName } from '@/config/icons'
 import type { HassEntity } from '@/ha/types'
 
 export { z }
 export {
+  didYouMean,
   entity,
   type Gradient,
   gradient,
@@ -32,20 +34,29 @@ export { mockEntity, mockLight } from '@/ha/mock/entity'
 
 const DEFAULT_APP_COLORS: Gradient = ['#8e8e93', '#48484a']
 
-/** Keys every app has, whatever its type. */
-const appBase = {
-  id: text.meta({ description: 'Unique ID, e.g. vacuum.' }),
-  name: text,
-  icon: icon('house'),
-  colors: gradient(DEFAULT_APP_COLORS),
-  hidden: z
-    .boolean()
-    .default(false)
-    .meta({ description: 'Leave it off the Home screen; it then only opens from an event.' }),
-}
+/** Cells a widget takes on the dashboard grid: columns x rows. */
+export type WidgetSize = '1x1' | '2x1' | '1x2' | '2x2' | '4x2'
+export const WIDGET_SIZES: WidgetSize[] = ['1x1', '2x1', '1x2', '2x2', '4x2']
+/** On the dashboard, or small in a face slot. */
+export type WidgetMode = 'dashboard' | 'complication'
 
+type Loader = () => Promise<Component | { default: Component }>
 type Simplify<T> = { [K in keyof T]: T[K] } & {}
 type Outputs<Shape extends z.ZodRawShape> = { [K in keyof Shape]: z.output<Shape[K]> }
+
+/** Keys every app has, whatever its type. */
+function appBase(defaultIcon: IconName) {
+  return {
+    id: text.meta({ description: 'Unique ID, e.g. vacuum.' }),
+    name: text,
+    icon: icon(defaultIcon),
+    colors: gradient(DEFAULT_APP_COLORS),
+    hidden: z.boolean().default(false).meta({
+      description: 'Leave it off the generated dashboard (when there is no `dashboard:`).',
+    }),
+  }
+}
+type AppBase = Outputs<ReturnType<typeof appBase>>
 
 /**
  * An app as parsed from kiosk.yaml. Its entity IDs sit right on the app in the
@@ -56,8 +67,7 @@ export type ParsedApp<
   Entities extends z.ZodRawShape,
   Settings extends z.ZodRawShape,
 > = Simplify<
-  { type: Type } & Outputs<typeof appBase> &
-    Outputs<Settings> & { entities: Simplify<Outputs<Entities>> }
+  { type: Type } & AppBase & Outputs<Settings> & { entities: Simplify<Outputs<Entities>> }
 >
 
 export interface AppStatus {
@@ -69,18 +79,38 @@ export interface AppStatus {
 export interface FinishContext {
   /** kiosk.yaml's color swatches for lights. */
   colors: ColorPreset[]
+  /** kiosk.yaml's top-level `weather:` entity. */
+  weather?: string
+}
+
+export interface WidgetSpec<App, WidgetSettings extends z.ZodRawShape> {
+  /** The widget, as a lazy import: `() => import('./VacuumWidget.vue')`. */
+  widgetScreen: Loader
+  /** Shown over the widget on a long-press, e.g. a brightness slider. */
+  quick?: Loader
+  /** The sizes it can take. The first is the default. */
+  sizes: [WidgetSize, ...WidgetSize[]]
+  /** May sit in a face slot. */
+  complication?: boolean
+  /** Keys of the widget itself on a dashboard entry (`{ app: lights, group: den }`). */
+  settings?: WidgetSettings
+  /** Checks the settings against the app. Returns the problem, if any. */
+  check?: (app: NoInfer<App>, settings: Outputs<WidgetSettings>) => string | undefined
 }
 
 export interface AppTypeSpec<
   Type extends string,
   Entities extends z.ZodRawShape,
   Settings extends z.ZodRawShape,
+  WidgetSettings extends z.ZodRawShape,
   App,
 > {
-  /** What kiosk.yaml's `type:` says, e.g. `vacuum`. */
+  /** What kiosk.yaml's `type:` says, e.g. `vacuum`. Must match the folder name. */
   type: Type
   /** One line for the editor's hover help. */
   description: string
+  /** The icon when kiosk.yaml sets none. Default: house. */
+  icon?: IconName
   /** Home Assistant entity IDs the app uses. They end up in `app.entities`. */
   entities: Entities
   /** Any other keys, kept on the app as they are. */
@@ -91,12 +121,14 @@ export interface AppTypeSpec<
    */
   overlay?: boolean
   /**
-   * Opens when the app is tapped, as a lazy import: `() => import('./VacuumPanel.vue')`.
+   * The full-screen view, as a lazy import: `() => import('./VacuumPanel.vue')`.
    * Gets `app`, an optional `focus` (a part to scroll to) and emits `close`.
-   * Overlay types also get the event's `message`.
+   * Overlay types also get the event's `message`. Leave out for a widget-only type.
    */
-  screen: () => Promise<Component | { default: Component }>
-  /** One-line live status for the Home screen chips. Leave out for no chip. */
+  screen?: Loader
+  /** The dashboard widget. Leave out for a 1x1 widget built from `status`. */
+  widget?: WidgetSpec<App, WidgetSettings>
+  /** One-line live status, for the default widget. */
   status?: (app: App) => ComputedRef<AppStatus | null>
   /** Fills in what depends on the rest of kiosk.yaml, e.g. the color swatches. */
   finish?: (app: ParsedApp<Type, Entities, Settings>, context: FinishContext) => App
@@ -104,19 +136,29 @@ export interface AppTypeSpec<
   mock: (app: App) => HassEntity[]
 }
 
+/** light.living_room_lamp → Living room lamp */
+function nameFrom(id: string): string {
+  const words = id.slice(id.indexOf('.') + 1).replace(/[_-]+/g, ' ')
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
 export function defineAppType<
   const Type extends string,
   Entities extends z.ZodRawShape,
   Settings extends z.ZodRawShape = {},
+  WidgetSettings extends z.ZodRawShape = {},
   App = ParsedApp<Type, Entities, Settings>,
->(spec: AppTypeSpec<Type, Entities, Settings, App>) {
+>(spec: AppTypeSpec<Type, Entities, Settings, WidgetSettings, App>) {
+  if (!spec.screen && !spec.widget)
+    throw new Error(`App type ${spec.type} needs a screen or a widget`)
   const entityKeys = new Set(Object.keys(spec.entities))
-  const schema = object({
-    ...appBase,
+  const base = appBase(spec.icon ?? 'house')
+  const own = {
     type: z.literal(spec.type).meta({ description: spec.description }),
     ...spec.entities,
     ...spec.settings,
-  }).transform((raw) => {
+  }
+  const split = (raw: Record<string, unknown>) => {
     const app: Record<string, unknown> = {}
     const entities: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(raw)) {
@@ -124,8 +166,27 @@ export function defineAppType<
       else app[key] = value
     }
     return { ...app, entities } as ParsedApp<Type, Entities, Settings>
+  }
+  /** An entry in `apps:`. */
+  const schema = object({ ...base, ...own }).transform(split)
+  /**
+   * A dashboard entry (`{ type: scene, entity: scene.x }`): no `id` (the kiosk
+   * makes one) and the name defaults to the entity's, e.g. "Movie night".
+   */
+  const inlineSchema = object({
+    ...own,
+    name: optional(text),
+    icon: base.icon,
+    colors: base.colors,
+  }).transform((parsed) => {
+    const raw = parsed as Record<string, unknown> & { name?: string }
+    const firstEntity = Object.entries(raw).find(([key]) => entityKeys.has(key))?.[1]
+    const name =
+      raw.name ??
+      (typeof firstEntity === 'string' ? nameFrom(firstEntity) : nameFrom(`.${spec.type}`))
+    return split({ ...raw, id: '', name, hidden: true })
   })
-  return { ...spec, schema }
+  return { ...spec, schema, inlineSchema }
 }
 
 /** The app config a definition produces, e.g. `AppOf<typeof vacuum>`. */

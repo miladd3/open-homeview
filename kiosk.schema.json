@@ -48,7 +48,7 @@
       ]
     },
     "apps": {
-      "description": "App icons on the Home screen.",
+      "description": "Your apps. Each has a widget, a full-screen view, or both.",
       "anyOf": [
         {
           "type": "array",
@@ -82,6 +82,8 @@
                       "briefcase",
                       "car",
                       "cctv",
+                      "clock",
+                      "cloud-sun",
                       "coffee",
                       "cooking-pot",
                       "door",
@@ -135,91 +137,131 @@
                   },
                   "hidden": {
                     "default": false,
-                    "description": "Leave it off the Home screen; it then only opens from an event.",
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
                     "type": "boolean"
                   },
                   "type": {
                     "type": "string",
-                    "const": "vacuum",
-                    "description": "A robot vacuum."
+                    "const": "camera",
+                    "description": "A live camera, full screen."
                   },
-                  "vacuum": {
+                  "camera": {
                     "type": "string",
-                    "pattern": "^vacuum\\.[a-z0-9_]+$",
-                    "x-entity-domain": "vacuum",
-                    "description": "A vacuum.* entity ID from Home Assistant."
+                    "pattern": "^camera\\.[a-z0-9_]+$",
+                    "x-entity-domain": "camera",
+                    "description": "A camera.* entity ID from Home Assistant."
                   },
-                  "fullClean": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
-                        "x-entity-domain": "*",
-                        "description": "Button that starts a full clean (vacuum + mop)."
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "fullVacuum": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
-                        "x-entity-domain": "*",
-                        "description": "Button that starts a full vacuum."
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "progress": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^sensor\\.[a-z0-9_]+$",
-                        "x-entity-domain": "sensor",
-                        "description": "Cleaning progress in %."
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "status": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^sensor\\.[a-z0-9_]+$",
-                        "x-entity-domain": "sensor",
-                        "description": "Detailed status text."
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "battery": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^sensor\\.[a-z0-9_]+$",
-                        "x-entity-domain": "sensor",
-                        "description": "Battery level in %."
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
+                  "autoCloseSeconds": {
+                    "default": 60,
+                    "description": "Closes after this long without a touch.",
+                    "type": "number",
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
                   "id",
                   "name",
                   "type",
-                  "vacuum"
+                  "camera"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "clock",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "clock",
+                    "description": "The time and date."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type"
                 ],
                 "additionalProperties": false
               },
@@ -251,6 +293,8 @@
                       "briefcase",
                       "car",
                       "cctv",
+                      "clock",
+                      "cloud-sun",
                       "coffee",
                       "cooking-pot",
                       "door",
@@ -304,244 +348,7 @@
                   },
                   "hidden": {
                     "default": false,
-                    "description": "Leave it off the Home screen; it then only opens from an event.",
-                    "type": "boolean"
-                  },
-                  "type": {
-                    "type": "string",
-                    "const": "tv",
-                    "description": "A TV remote."
-                  },
-                  "player": {
-                    "type": "string",
-                    "pattern": "^media_player\\.[a-z0-9_]+$",
-                    "x-entity-domain": "media_player",
-                    "description": "A media_player.* entity ID from Home Assistant."
-                  },
-                  "remote": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^remote\\.[a-z0-9_]+$",
-                        "x-entity-domain": "remote",
-                        "description": "A remote.* entity ID from Home Assistant."
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "type",
-                  "player"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "Unique ID, e.g. vacuum."
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "icon": {
-                    "default": "house",
-                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
-                    "type": "string",
-                    "enum": [
-                      "armchair",
-                      "baby",
-                      "bath",
-                      "bed",
-                      "bed-single",
-                      "bell",
-                      "book",
-                      "bot",
-                      "briefcase",
-                      "car",
-                      "cctv",
-                      "coffee",
-                      "cooking-pot",
-                      "door",
-                      "dumbbell",
-                      "fan",
-                      "file-cog",
-                      "flower",
-                      "gamepad",
-                      "house",
-                      "lamp",
-                      "lamp-desk",
-                      "laptop",
-                      "lightbulb",
-                      "monitor",
-                      "music",
-                      "plug",
-                      "shield",
-                      "shield-check",
-                      "shower",
-                      "sofa",
-                      "speaker",
-                      "thermometer",
-                      "trees",
-                      "tv",
-                      "utensils",
-                      "washing-machine"
-                    ]
-                  },
-                  "colors": {
-                    "default": [
-                      "#8e8e93",
-                      "#48484a"
-                    ],
-                    "description": "Two colors for a gradient: [from, to].",
-                    "type": "array",
-                    "prefixItems": [
-                      {
-                        "type": "string",
-                        "minLength": 1,
-                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
-                      },
-                      {
-                        "type": "string",
-                        "minLength": 1,
-                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
-                      }
-                    ],
-                    "items": false,
-                    "minItems": 2,
-                    "maxItems": 2
-                  },
-                  "hidden": {
-                    "default": false,
-                    "description": "Leave it off the Home screen; it then only opens from an event.",
-                    "type": "boolean"
-                  },
-                  "type": {
-                    "type": "string",
-                    "const": "switch",
-                    "description": "Any on/off entity, with optional sensors."
-                  },
-                  "switch": {
-                    "type": "string",
-                    "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
-                    "x-entity-domain": "*",
-                    "description": "Any on/off entity (switch, input_boolean, fan…)."
-                  },
-                  "sensors": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "pattern": "^sensor\\.[a-z0-9_]+$",
-                          "x-entity-domain": "sensor",
-                          "description": "A sensor.* entity ID from Home Assistant."
-                        }
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "type",
-                  "switch"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "Unique ID, e.g. vacuum."
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "icon": {
-                    "default": "house",
-                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
-                    "type": "string",
-                    "enum": [
-                      "armchair",
-                      "baby",
-                      "bath",
-                      "bed",
-                      "bed-single",
-                      "bell",
-                      "book",
-                      "bot",
-                      "briefcase",
-                      "car",
-                      "cctv",
-                      "coffee",
-                      "cooking-pot",
-                      "door",
-                      "dumbbell",
-                      "fan",
-                      "file-cog",
-                      "flower",
-                      "gamepad",
-                      "house",
-                      "lamp",
-                      "lamp-desk",
-                      "laptop",
-                      "lightbulb",
-                      "monitor",
-                      "music",
-                      "plug",
-                      "shield",
-                      "shield-check",
-                      "shower",
-                      "sofa",
-                      "speaker",
-                      "thermometer",
-                      "trees",
-                      "tv",
-                      "utensils",
-                      "washing-machine"
-                    ]
-                  },
-                  "colors": {
-                    "default": [
-                      "#8e8e93",
-                      "#48484a"
-                    ],
-                    "description": "Two colors for a gradient: [from, to].",
-                    "type": "array",
-                    "prefixItems": [
-                      {
-                        "type": "string",
-                        "minLength": 1,
-                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
-                      },
-                      {
-                        "type": "string",
-                        "minLength": 1,
-                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
-                      }
-                    ],
-                    "items": false,
-                    "minItems": 2,
-                    "maxItems": 2
-                  },
-                  "hidden": {
-                    "default": false,
-                    "description": "Leave it off the Home screen; it then only opens from an event.",
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
                     "type": "boolean"
                   },
                   "type": {
@@ -587,6 +394,8 @@
                             "briefcase",
                             "car",
                             "cctv",
+                            "clock",
+                            "cloud-sun",
                             "coffee",
                             "cooking-pot",
                             "door",
@@ -741,6 +550,8 @@
                       "briefcase",
                       "car",
                       "cctv",
+                      "clock",
+                      "cloud-sun",
                       "coffee",
                       "cooking-pot",
                       "door",
@@ -794,36 +605,509 @@
                   },
                   "hidden": {
                     "default": false,
-                    "description": "Leave it off the Home screen; it then only opens from an event.",
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
                     "type": "boolean"
                   },
                   "type": {
                     "type": "string",
-                    "const": "camera",
-                    "description": "A live camera, full screen."
+                    "const": "switch",
+                    "description": "Any on/off entity, with optional sensors."
                   },
-                  "camera": {
+                  "switch": {
                     "type": "string",
-                    "pattern": "^camera\\.[a-z0-9_]+$",
-                    "x-entity-domain": "camera",
-                    "description": "A camera.* entity ID from Home Assistant."
+                    "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                    "x-entity-domain": "*",
+                    "description": "Any on/off entity (switch, input_boolean, fan…)."
                   },
-                  "autoCloseSeconds": {
-                    "default": 60,
-                    "description": "Closes after this long without a touch.",
-                    "type": "number",
-                    "exclusiveMinimum": 0
+                  "sensors": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^sensor\\.[a-z0-9_]+$",
+                          "x-entity-domain": "sensor",
+                          "description": "A sensor.* entity ID from Home Assistant."
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": [
                   "id",
                   "name",
                   "type",
-                  "camera"
+                  "switch"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "house",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "tv",
+                    "description": "A TV remote."
+                  },
+                  "player": {
+                    "type": "string",
+                    "pattern": "^media_player\\.[a-z0-9_]+$",
+                    "x-entity-domain": "media_player",
+                    "description": "A media_player.* entity ID from Home Assistant."
+                  },
+                  "remote": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^remote\\.[a-z0-9_]+$",
+                        "x-entity-domain": "remote",
+                        "description": "A remote.* entity ID from Home Assistant."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "player"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "house",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "vacuum",
+                    "description": "A robot vacuum."
+                  },
+                  "vacuum": {
+                    "type": "string",
+                    "pattern": "^vacuum\\.[a-z0-9_]+$",
+                    "x-entity-domain": "vacuum",
+                    "description": "A vacuum.* entity ID from Home Assistant."
+                  },
+                  "fullClean": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                        "x-entity-domain": "*",
+                        "description": "Button that starts a full clean (vacuum + mop)."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fullVacuum": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+                        "x-entity-domain": "*",
+                        "description": "Button that starts a full vacuum."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "progress": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sensor\\.[a-z0-9_]+$",
+                        "x-entity-domain": "sensor",
+                        "description": "Cleaning progress in %."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sensor\\.[a-z0-9_]+$",
+                        "x-entity-domain": "sensor",
+                        "description": "Detailed status text."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "battery": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sensor\\.[a-z0-9_]+$",
+                        "x-entity-domain": "sensor",
+                        "description": "Battery level in %."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type",
+                  "vacuum"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique ID, e.g. vacuum."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "icon": {
+                    "default": "cloud-sun",
+                    "description": "Icon name (Lucide). The full list is in src/config/icons.ts.",
+                    "type": "string",
+                    "enum": [
+                      "armchair",
+                      "baby",
+                      "bath",
+                      "bed",
+                      "bed-single",
+                      "bell",
+                      "book",
+                      "bot",
+                      "briefcase",
+                      "car",
+                      "cctv",
+                      "clock",
+                      "cloud-sun",
+                      "coffee",
+                      "cooking-pot",
+                      "door",
+                      "dumbbell",
+                      "fan",
+                      "file-cog",
+                      "flower",
+                      "gamepad",
+                      "house",
+                      "lamp",
+                      "lamp-desk",
+                      "laptop",
+                      "lightbulb",
+                      "monitor",
+                      "music",
+                      "plug",
+                      "shield",
+                      "shield-check",
+                      "shower",
+                      "sofa",
+                      "speaker",
+                      "thermometer",
+                      "trees",
+                      "tv",
+                      "utensils",
+                      "washing-machine"
+                    ]
+                  },
+                  "colors": {
+                    "default": [
+                      "#8e8e93",
+                      "#48484a"
+                    ],
+                    "description": "Two colors for a gradient: [from, to].",
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Any CSS color, e.g. \"#ff9f0a\"."
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "hidden": {
+                    "default": false,
+                    "description": "Leave it off the generated dashboard (when there is no `dashboard:`).",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "weather",
+                    "description": "The weather of kiosk.yaml's top-level `weather:` entity."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type"
                 ],
                 "additionalProperties": false
               }
             ]
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dashboard": {
+      "description": "Pages of widgets on the Home screen, in order. Leave out for one made from your apps.",
+      "anyOf": [
+        {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "A type with no keys, e.g. clock or weather."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "app": {
+                      "description": "The ID of an app in `apps:`.",
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "type": {
+                      "description": "An app type written right here, with its keys. One of: camera, clock, lights, switch, tv, vacuum, weather.",
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "size": {
+                      "description": "Columns x rows. Default: the widget's first size.",
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "1x1",
+                            "2x1",
+                            "1x2",
+                            "2x2",
+                            "4x2"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "additionalProperties": {}
+                }
+              ],
+              "description": "A widget: `clock`, `{ app: <id> }` for an app in `apps:`, or `{ type: <type>, ... }` written inline."
+            }
           }
         },
         {

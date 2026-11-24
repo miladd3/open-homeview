@@ -1,4 +1,4 @@
-import { mockAppEntities } from '@/apps'
+import { type LightsApp, mockAppEntities } from '@/apps'
 import type { EventConfig, HomeConfig } from '@/config/home'
 import { kelvinToRgb, type Rgb } from '../lightColor'
 import type { HassEntities, HassEntity } from '../types'
@@ -15,7 +15,7 @@ export function createScenePresets(config: HomeConfig): Record<string, ScenePres
   return Object.fromEntries(
     config.apps.flatMap((app) =>
       app.type === 'lights'
-        ? app.groups.flatMap((group) =>
+        ? (app as LightsApp).groups.flatMap((group) =>
             group.scenes.map((scene) => [
               scene.entityId,
               { lights: group.lightEntityIds, brightnessPct: 70, rgb: hexToRgb(scene.colors[0]) },
