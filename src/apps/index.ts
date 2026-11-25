@@ -1,11 +1,12 @@
 // Every app type the kiosk supports. `type:` on an app in kiosk.yaml picks one.
 //
-// To add a type: make a folder next to these (copy a small one like switch/) with
-// an index.ts that does `export default defineAppType(...)`. The folder name is
-// the type name. It is found on its own, no list to update.
+// To add a type: make a folder next to these (`npm run new app <type>`) with an
+// index.ts that does `export default defineAppType(...)`. The folder name is the
+// type name. It is found on its own, no list to update. Runtime packs are added
+// to the same list (src/addons.ts).
 
 import { type Component, type ComputedRef, defineAsyncComponent } from 'vue'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 import type { AppStatus, FinishContext, ParsedApp, WidgetSize, WidgetSpec } from '@/kit/define'
 import type { HassEntity } from '@/ha/types'
@@ -25,6 +26,7 @@ type Loader = () => Promise<Component | { default: Component }>
 /** What `defineAppType` returns, seen from outside the type's folder. */
 interface AppTypeDefinition {
   type: string
+  description: string
   overlay?: boolean
   screen?: Loader
   widget?: WidgetSpec<AppConfig, z.ZodRawShape>
@@ -35,29 +37,19 @@ interface AppTypeDefinition {
   inlineSchema: z.ZodType<AppConfig>
 }
 
-/** Every app type, from the folders next to this file. */
+/** Every app type: the folders next to this file, then the packs kiosk.yaml lists. */
 export const appTypes = Object.values(
   import.meta.glob<AppTypeDefinition>('./*/index.ts', { eager: true, import: 'default' }),
 )
 
-const byType = new Map(appTypes.map((definition) => [definition.type, definition]))
-
 /** The definition of a type, or undefined for a name kiosk.yaml made up. */
 export function appTypeOf(type: string): AppTypeDefinition | undefined {
-  return byType.get(type)
+  return appTypes.find((definition) => definition.type === type)
 }
 
 function definitionOf(app: { type: string }) {
-  return byType.get(app.type)!
+  return appTypeOf(app.type)!
 }
-
-/** One app in kiosk.yaml's `apps:`, checked against the schema of its `type`. */
-export const appSchema = z.discriminatedUnion(
-  'type',
-  appTypes.map((definition) => definition.schema) as unknown as Parameters<
-    typeof z.discriminatedUnion
-  >[1],
-) as unknown as z.ZodType<AppConfig>
 
 /** Runs the type's `finish`, which may need the rest of kiosk.yaml (like the color swatches). */
 export function finishApp(app: AppConfig, context: FinishContext): AppConfig {

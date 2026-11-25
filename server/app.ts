@@ -4,11 +4,11 @@
 
 import { readFile, stat } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { extname, join, normalize, sep } from 'node:path'
+import { join, normalize, sep } from 'node:path'
 import type { Duplex } from 'node:stream'
 
 import { createHaProxy } from './haProxy.ts'
-import { createKioskRoutes } from './kiosk.ts'
+import { contentType, createKioskRoutes } from './kiosk.ts'
 import { createSchemaHandler } from './schema.ts'
 
 export interface AppOptions {
@@ -24,19 +24,6 @@ export interface AppOptions {
   schemaPath?: string
   /** Suggest this home's entity IDs in the served schema (SCHEMA_ENTITIES). */
   schemaEntities?: boolean
-}
-
-const CONTENT_TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2',
-  '.woff': 'font/woff',
-  '.webp': 'image/webp',
 }
 
 export function createApp({
@@ -57,7 +44,7 @@ export function createApp({
   async function sendFile(res: ServerResponse, file: string, cacheControl: string) {
     const body = await readFile(file)
     res.writeHead(200, {
-      'content-type': CONTENT_TYPES[extname(file)] ?? 'application/octet-stream',
+      'content-type': contentType(file),
       'cache-control': cacheControl,
     })
     res.end(body)

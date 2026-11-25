@@ -8,7 +8,7 @@
 
 import { z } from 'zod'
 
-import { type AppConfig, appSchema, appTypeOf, appTypes, finishApp, widgetSizes } from '@/apps'
+import { type AppConfig, appTypeOf, appTypes, finishApp, widgetSizes } from '@/apps'
 import { faceTypes } from '@/faces'
 import { themeTypes } from '@/themes'
 import { WIDGET_SIZES, type WidgetSize } from '@/kit/define'
@@ -122,6 +122,17 @@ export class ConfigError extends Error {
 }
 
 // ---- the file ----
+//
+// Built when this file loads, from every app type, face and theme, so runtime
+// packs must be registered before (main.ts loads them first).
+
+/** One app in `apps:`, checked against the schema of its `type`. */
+const appSchema = z.discriminatedUnion(
+  'type',
+  appTypes.map((definition) => definition.schema) as unknown as Parameters<
+    typeof z.discriminatedUnion
+  >[1],
+) as unknown as z.ZodType<AppConfig>
 
 const event = object({
   entity: entity(
@@ -488,6 +499,10 @@ export const kioskYamlSchema = object({
   entities: list(entity()).meta({
     description:
       "More entities the on-screen editor's gallery may offer as widgets (lights, scenes, sensors…).",
+  }),
+  addons: list(text).meta({
+    description:
+      'Runtime packs to load: folder names in /config/addons/ (an app type, face or theme each).',
   }),
   editPin: optional(z.union([text, z.number()])).meta({
     description:

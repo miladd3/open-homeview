@@ -195,6 +195,11 @@ entities:
 # Lock edit mode with a PIN (quote it). The server checks it; the page never sees it.
 # editPin: '1234'
 
+# Runtime packs: app types, faces or themes built with `npm run build:addon`,
+# copied to /config/addons/<name>/. Only the ones listed here load. They run in
+# the browser like built-in ones, so only add packs you trust. See CONTRIBUTING.md.
+# addons: [garage-door]
+
 # Things happening in Home Assistant that open an app on their own, over
 # everything (also wakes from standby).
 #   entity: an event.* entity (doorbell ring, button press) fires every time it

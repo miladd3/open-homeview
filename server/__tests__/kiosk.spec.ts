@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -15,6 +15,7 @@ apps:
   - { id: tv, type: tv, name: TV, player: media_player.tv }
 dashboard:
   - [clock, { type: lock, entity: lock.front }]
+addons: [cover, broken, missing, ../etc]
 `
 
 let server: Server
@@ -100,6 +101,49 @@ describe('kiosk routes', () => {
   it('leaves other paths alone', async () => {
     expect((await fetch(`${base}/somewhere`)).status).toBe(418)
     expect((await fetch(`${base}/kiosk/nothing`)).status).toBe(404)
+  })
+})
+
+describe('addon routes', () => {
+  beforeEach(async () => {
+    for (const name of ['cover', 'broken', 'unlisted']) {
+      await mkdir(join(dir, 'addons', name, 'chunks'), { recursive: true })
+      await writeFile(join(dir, 'addons', name, 'index.js'), 'export default {}')
+    }
+    const manifest = { name: 'renamed', kind: 'app', version: '1.0.0', kit: 1, files: ['index.js'] }
+    await writeFile(join(dir, 'addons/cover/addon.json'), JSON.stringify(manifest))
+    await writeFile(join(dir, 'addons/unlisted/addon.json'), JSON.stringify(manifest))
+    await writeFile(join(dir, 'addons/broken/addon.json'), '{ nope')
+    await writeFile(join(dir, 'addons/cover/chunks/Panel.js'), 'export default 1')
+    await writeFile(join(dir, 'secret.txt'), 'outside')
+  })
+
+  it('lists the addon.json of every pack in `addons:`, named by its folder', async () => {
+    const response = await fetch(`${base}/kiosk/addons`)
+    expect(response.headers.get('cache-control')).toBe('no-store')
+    expect(await response.json()).toEqual([
+      { name: 'cover', kind: 'app', version: '1.0.0', kit: 1, files: ['index.js'] },
+      { name: 'broken', error: '/config/addons/broken/addon.json is missing or broken' },
+      { name: 'missing', error: '/config/addons/missing/addon.json is missing or broken' },
+      { name: '../etc', error: 'is not a folder name (a-z, 0-9 and -)' },
+    ])
+  })
+
+  it('serves the files of listed packs only, never outside their folder', async () => {
+    const index = await fetch(`${base}/addons/cover/index.js`)
+    expect(index.headers.get('content-type')).toContain('text/javascript')
+    expect(await index.text()).toBe('export default {}')
+    expect(await (await fetch(`${base}/addons/cover/chunks/Panel.js`)).text()).toBe(
+      'export default 1',
+    )
+    const paths = [
+      '/addons/unlisted/index.js',
+      '/addons/cover/missing.js',
+      '/addons/cover/..%2f..%2fsecret.txt',
+      '/addons/..%2fsecret.txt',
+    ]
+    const statuses = await Promise.all(paths.map(async (path) => (await fetch(base + path)).status))
+    expect(statuses).toEqual([404, 404, 404, 404])
   })
 })
 

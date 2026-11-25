@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { type HomeConfig, parseHomeConfig } from '@/config/home'
 import { type ConfigSource, fetchConfigSource, parseConfigSource } from '@/config/load'
@@ -13,8 +13,14 @@ export const useConfigStore = defineStore('config', () => {
   const isExample = ref(false)
   /** Editing the dashboard on the screen needs kiosk.yaml's `editPin`. */
   const pinSet = ref(false)
-  /** Problems that don't stop the kiosk, e.g. an ignored layout.yaml. */
-  const warnings = ref<string[]>([])
+  /** Runtime packs that were skipped, and why. */
+  const addonWarnings = ref<string[]>([])
+  const layoutProblem = ref<string>()
+  /** Problems that don't stop the kiosk: skipped packs, an ignored layout.yaml. */
+  const warnings = computed(() => [
+    ...addonWarnings.value,
+    ...(layoutProblem.value ? [layoutProblem.value] : []),
+  ])
 
   async function load() {
     const fetched = await fetchConfigSource()
@@ -22,7 +28,7 @@ export const useConfigStore = defineStore('config', () => {
     set(parsed.home, fetched)
     isExample.value = fetched.isExample
     pinSet.value = fetched.pinSet
-    warnings.value = parsed.layoutProblem ? [parsed.layoutProblem] : []
+    layoutProblem.value = parsed.layoutProblem
   }
 
   function set(config: HomeConfig, from: Pick<ConfigSource, 'text' | 'layout'> = { text: '' }) {
@@ -30,5 +36,5 @@ export const useConfigStore = defineStore('config', () => {
     source.value = { text: from.text, layout: from.layout }
   }
 
-  return { home, source, isExample, pinSet, warnings, load, set }
+  return { home, source, isExample, pinSet, addonWarnings, warnings, load, set }
 })

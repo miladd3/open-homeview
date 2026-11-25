@@ -1,17 +1,21 @@
-// The kiosk's own routes, next to the HA proxy: kiosk.yaml and the on-screen
-// editor's layout.yaml. Used by the production server (app.ts) and by
-// `npm run dev` (vite.config.ts), so both behave the same.
+// The kiosk's own routes, next to the HA proxy: kiosk.yaml, the on-screen
+// editor's layout.yaml and runtime packs. Used by the production server (app.ts)
+// and by `npm run dev` (vite.config.ts), so both behave the same.
 //
 //   GET    /config/kiosk.yaml   the config, without `editPin`
 //   GET    /config/layout.yaml  the saved dashboard layout, 404 if none
 //   POST   /kiosk/pin           checks X-Edit-Pin
 //   PUT    /kiosk/layout        saves { dashboard } as layout.yaml
 //   DELETE /kiosk/layout        removes layout.yaml (back to kiosk.yaml's dashboard)
+//   GET    /kiosk/addons        the addon.json of each pack in kiosk.yaml's `addons:`
+//   GET    /addons/<name>/…     a listed pack's files, from /config/addons/<name>/
+//
+// The server never runs pack code: it only serves the files.
 
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { readFile, rename, rm, writeFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { dirname, join } from 'node:path'
+import { dirname, extname, join, normalize, sep } from 'node:path'
 
 import { parse, parseDocument, stringify } from 'yaml'
 
@@ -22,6 +26,7 @@ const EXAMPLE_HEADER = 'x-kiosk-config'
 /** The edit PIN, sent by the page; on /config/kiosk.yaml, `set` when kiosk.yaml has one. */
 const PIN_HEADER = 'x-kiosk-edit-pin'
 
+const ADDON_NAME = /^[a-z0-9][a-z0-9-]*$/
 const MAX_TRIES = 5
 const LOCKOUT_MS = 60_000
 const MAX_BODY_BYTES = 100_000
@@ -30,6 +35,22 @@ interface KioskRoutesOptions {
   configPath: string
   fallbackConfigPath?: string
 }
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.webp': 'image/webp',
+}
+
+export const contentType = (file: string) =>
+  CONTENT_TYPES[extname(file)] ?? 'application/octet-stream'
 
 type Json = Record<string, unknown>
 const isObject = (value: unknown): value is Json =>
@@ -73,6 +94,7 @@ const digest = (text: string) => createHash('sha256').update(text).digest()
 
 export function createKioskRoutes({ configPath, fallbackConfigPath }: KioskRoutesOptions) {
   const layoutPath = join(dirname(configPath), 'layout.yaml')
+  const addonsDir = join(dirname(configPath), 'addons')
   let failures = 0
   let lockedUntil = 0
 
@@ -86,6 +108,42 @@ export function createKioskRoutes({ configPath, fallbackConfigPath }: KioskRoute
 
   async function readKiosk(): Promise<unknown> {
     return parse((await readConfig(configPath, fallbackConfigPath)).text)
+  }
+
+  /** The names in kiosk.yaml's `addons:`. */
+  async function listedAddons(): Promise<string[]> {
+    const kiosk = await readKiosk()
+    const names = isObject(kiosk) && Array.isArray(kiosk.addons) ? kiosk.addons : []
+    return names.map(String)
+  }
+
+  async function serveAddonList(res: ServerResponse) {
+    const manifests = await Promise.all(
+      (await listedAddons()).map(async (name) => {
+        if (!ADDON_NAME.test(name)) return { name, error: 'is not a folder name (a-z, 0-9 and -)' }
+        try {
+          const manifest = JSON.parse(await readFile(join(addonsDir, name, 'addon.json'), 'utf8'))
+          // The folder name is the pack's name, whatever addon.json says.
+          return { ...manifest, name }
+        } catch {
+          return { name, error: `/config/addons/${name}/addon.json is missing or broken` }
+        }
+      }),
+    )
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+    res.end(JSON.stringify(manifests))
+  }
+
+  async function serveAddonFile(res: ServerResponse, pathname: string) {
+    const [name = '', ...path] = pathname.slice('/addons/'.length).split('/')
+    if (!ADDON_NAME.test(name) || !(await listedAddons()).includes(name)) return send(res, 404)
+    const folder = join(addonsDir, name) + sep
+    // Never anything outside the pack's folder (`..` in the path).
+    const file = normalize(join(folder, decodeURIComponent(path.join('/'))))
+    const body = file.startsWith(folder) ? await readFile(file).catch(() => undefined) : undefined
+    if (!body) return send(res, 404)
+    res.writeHead(200, { 'content-type': contentType(file), 'cache-control': 'no-cache' })
+    res.end(body)
   }
 
   /** Checks X-Edit-Pin against kiosk.yaml's `editPin`. Sends 403/429 and returns false if wrong. */
@@ -155,12 +213,19 @@ export function createKioskRoutes({ configPath, fallbackConfigPath }: KioskRoute
     const pathname = new URL(req.url ?? '/', 'http://kiosk').pathname
     const route = `${req.method} ${pathname}`
     try {
+      if (req.method === 'GET' && pathname.startsWith('/addons/')) {
+        await serveAddonFile(res, pathname)
+        return true
+      }
       switch (route) {
         case 'GET /config/kiosk.yaml':
           await serveConfig(res)
           return true
         case 'GET /config/layout.yaml':
           await serveLayout(res)
+          return true
+        case 'GET /kiosk/addons':
+          await serveAddonList(res)
           return true
         case 'POST /kiosk/pin':
           if (pinOk(req, res, await readKiosk())) send(res, 204)

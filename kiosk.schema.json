@@ -1863,6 +1863,21 @@
         }
       ]
     },
+    "addons": {
+      "description": "Runtime packs to load: folder names in /config/addons/ (an app type, face or theme each).",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "editPin": {
       "description": "A PIN to edit the dashboard on the screen. Quote it ('0123'). Leave out for no PIN.",
       "anyOf": [
