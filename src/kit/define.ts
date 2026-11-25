@@ -44,6 +44,7 @@ export type WidgetMode = 'dashboard' | 'complication'
 type Loader = () => Promise<Component | { default: Component }>
 type Simplify<T> = { [K in keyof T]: T[K] } & {}
 type Outputs<Shape extends z.ZodRawShape> = { [K in keyof Shape]: z.output<Shape[K]> }
+type Inputs<Shape extends z.ZodRawShape> = { [K in keyof Shape]?: z.input<Shape[K]> }
 
 /** Keys every app has, whatever its type. */
 function appBase(defaultIcon: IconName) {
@@ -97,6 +98,12 @@ export interface WidgetSpec<App, WidgetSettings extends z.ZodRawShape> {
   settings?: WidgetSettings
   /** Checks the settings against the app. Returns the problem, if any. */
   check?: (app: NoInfer<App>, settings: Outputs<WidgetSettings>) => string | undefined
+  /**
+   * One widget per part of the app, as `settings` keys (`[{ group: den }, …]` for Lights).
+   * The gallery offers each one next to the app's own widget, and a dashboard made
+   * without `dashboard:` shows them in its place.
+   */
+  variants?: (app: NoInfer<App>) => Inputs<WidgetSettings>[]
 }
 
 export interface AppTypeSpec<
