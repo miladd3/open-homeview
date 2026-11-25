@@ -76,6 +76,25 @@ Make it executable:
 chmod +x /home/kiosk/kiosk.sh
 ```
 
+### Match touch input to the rotated screen
+
+`wlr-randr` rotates the picture, but under `cage` touch coordinates stay in portrait unless you rotate touch input too:
+
+- **Raspberry Pi Touch Display 2 (recommended):** rotate the touch driver directly in `/boot/firmware/config.txt` by adding `rotation=90` (or `270`) — or explicit axis flags (`swapxy,invx` / `swapxy,invy`) — to the display overlay, then reboot:
+
+  ```ini
+  dtoverlay=vc4-kms-dsi-ili9881-7inch,rotation=90
+  ```
+
+- **Other touchscreens (`udev` rule):** find your touchscreen's device name with `libinput list-devices` (look for `Capabilities: touch`) and add `/etc/udev/rules.d/99-touch-rotate.rules`:
+
+  ```udev
+  # 90° clockwise (use "0 1 0 -1 0 1" for 270°)
+  SUBSYSTEM=="input", ATTRS{name}=="<your touchscreen device name>", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 -1 1 1 0 0"
+  ```
+
+  Then run `sudo udevadm control --reload-rules && sudo udevadm trigger` and reboot.
+
 Create `/etc/systemd/system/kiosk.service`:
 
 ```ini
