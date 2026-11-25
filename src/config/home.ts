@@ -12,7 +12,6 @@ import { type AppConfig, appTypeOf, appTypes, finishApp, widgetSizes } from '@/a
 import { faceTypes } from '@/faces'
 import { themeTypes } from '@/themes'
 import { WIDGET_SIZES, type WidgetSize } from '@/kit/define'
-import type { LightsApp } from '@/apps/lights'
 import type { Rgb } from '@/ha/lightColor'
 import type { FinishContext, ThemeGraphics, ThemeMode } from '@/kit/define'
 import {
@@ -366,11 +365,12 @@ function resolveFace(
   return { face, options, slots }
 }
 
-/** Without `dashboard:`: the clock, the weather, each Lights group, then every other app. */
+/** Without `dashboard:`: the clock, the weather, widget variants (Lights groups), then other apps. */
 function generateDashboard(
   apps: AppConfig[],
   context: FinishContext,
   inline: AppConfig[],
+  resolve: ReturnType<typeof entryResolver>,
 ): DashboardWidget[][] {
   const builtIn = (type: string) => {
     const parsed = appTypeOf(type)!.inlineSchema.parse({ type })
@@ -384,24 +384,25 @@ function generateDashboard(
       builtIn('clock'),
       ...(context.weather ? [builtIn('weather')] : []),
       ...shown.flatMap((app) =>
-        app.type === 'lights'
-          ? (app as LightsApp).groups.map((group) => ({
-              app,
-              size: widgetSizes(app)[0]!,
-              settings: { group: group.id },
-              entry: { app: app.id, group: group.id },
-            }))
-          : [],
+        variantEntries(app).flatMap((entry) => resolve(entry, ['dashboard']) ?? []),
       ),
       ...shown
-        .filter((app) => app.type !== 'lights')
+        .filter((app) => !variantEntries(app).length)
         .map((app) => ({ app, size: widgetSizes(app)[0]!, settings: {}, entry: { app: app.id } })),
     ],
   ]
 }
 
+/** The dashboard entries of an app's widget variants, e.g. `{ app: lights, group: den }`. */
+function variantEntries(app: AppConfig): DashboardEntry[] {
+  const variants = appTypeOf(app.type)!.widget?.variants as
+    | ((app: AppConfig) => Record<string, unknown>[])
+    | undefined
+  return (variants?.(app) ?? []).map((settings) => ({ app: app.id, ...settings }))
+}
+
 /**
- * What the on-screen editor's gallery offers: every app (and each Lights group),
+ * What the on-screen editor's gallery offers: every app (and its widget variants),
  * the types that need no keys (clock, weather when `weather:` is set) and a
  * widget for each ID in `entities:`. Nothing that isn't in kiosk.yaml already.
  */
@@ -423,8 +424,7 @@ function buildGallery(
   widgetOnly.forEach(offer)
   for (const app of apps) {
     offer({ app: app.id })
-    if (app.type === 'lights')
-      (app as LightsApp).groups.forEach((group) => offer({ app: app.id, group: group.id }))
+    variantEntries(app).forEach(offer)
   }
   entityIds.forEach((id, i) => {
     if (widgetOnly.some((type) => offer({ type, entity: id }))) return
@@ -578,7 +578,7 @@ export const kioskYamlSchema = object({
       ? raw.dashboard.map((page, p) =>
           page.flatMap((entry, i) => resolve(entry, ['dashboard', p, i]) ?? []),
         )
-      : generateDashboard(apps, context, inline)
+      : generateDashboard(apps, context, inline, resolve)
     const { standby } = raw
     const faces = standby.faces ?? [
       raw.weather ? { face: 'big-clock', slots: { bottom: 'weather' } } : 'big-clock',

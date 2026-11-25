@@ -107,6 +107,7 @@ const lights = defineAppType({
       if (group && !ids.includes(group))
         return `group "${group}" is not a group of ${app.id}.${didYouMean(group, ids)}`
     },
+    variants: (app) => app.groups.map((g) => ({ group: g.id })),
   },
   // Every third light starts on. Names come from the entity ID (light.wall_lamp_1 → Wall lamp 1).
   mock: (app) => [

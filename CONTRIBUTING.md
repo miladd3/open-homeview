@@ -121,9 +121,10 @@ src/apps/vacuum/
   VacuumPanel.vue   # the screen, wrapped in <AppSheet> (full screen, ✕, icon, name, status)
 ```
 
-- `widget: { widgetScreen, sizes, quick?, complication?, settings?, check? }`. `sizes` lists the cells it can take; the first is the default. A widget gets `app`, `size` and `mode` (plus `settings` if it declares any) and emits `open` to open the screen. Text sizes follow the cell height (`--u` inside `<Widget>`), so a widget looks the same in every size; the big value grows with the widget.
+- `widget: { widgetScreen, sizes, quick?, complication?, settings?, check?, variants? }`. `sizes` lists the cells it can take; the first is the default. A widget gets `app`, `size` and `mode` (plus `settings` if it declares any) and emits `open` to open the screen. Text sizes follow the cell height (`--u` inside `<Widget>`), so a widget looks the same in every size; the big value grows with the widget.
 - `quick` is shown over the widget on a long-press (the brightness slider of `light` and `lights`).
 - `settings` are keys of the widget itself on a dashboard entry (`group` on a Lights widget), checked like app keys; `check` cross-checks them against the app.
+- `variants` lists one widget per part of the app, as `settings` (`app.groups.map((g) => ({ group: g.id }))` for Lights). The gallery offers each next to the app's own widget, and a dashboard made without `dashboard:` shows them instead of it. Any type with groups (rooms, floors…) gets this without touching the engine.
 - A type without `widget` gets a 1×1 one from its `status` (icon, name, status text; tap opens the screen). A type without `screen` is widget-only (clock, scene…).
 
 App folders import only from `@/kit` (UI), `@/kit/define` (`index.ts`), `vue`, `@lucide/vue` and their own folder; `npm run lint` enforces it. Talk to Home Assistant with `useEntity` and `useService`. The screen and widget are lazy imports (`screen: () => import('./VacuumPanel.vue')`), so the schema loads without the UI and each is its own chunk. A widget that throws shows as a grey "Widget error" cell; the rest of the dashboard keeps working.
