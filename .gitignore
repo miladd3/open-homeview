@@ -46,3 +46,6 @@ __screenshots__/
 .env
 # Agent working notes (not part of the app)
 /.agentworkflow/
+
+# The on-screen editor saves here in `npm run dev`
+/layout.yaml

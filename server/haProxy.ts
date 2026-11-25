@@ -43,9 +43,6 @@ export async function readConfig(
   }
 }
 
-/** Header that marks a /config/kiosk.yaml response as the example config. */
-export const EXAMPLE_HEADER = 'x-kiosk-config'
-
 type Message = Record<string, unknown> & { id?: number; type?: string }
 
 const ENTITY_ID = /^[a-z_]+\.[a-z0-9_]+$/

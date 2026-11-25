@@ -10,3 +10,4 @@ coverage
 !.env.example
 # Your own config is mounted at runtime, never baked in
 kiosk.yaml
+layout.yaml

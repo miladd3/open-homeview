@@ -5,30 +5,24 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { createHaProxy, EXAMPLE_HEADER, readConfig } from './server/haProxy.ts'
+import { createHaProxy } from './server/haProxy.ts'
+import { createKioskRoutes } from './server/kiosk.ts'
 
 // Local config: ./kiosk.yaml (git-ignored), or the example until you create one.
 const CONFIG = fileURLToPath(new URL('./kiosk.yaml', import.meta.url))
 const EXAMPLE_CONFIG = fileURLToPath(new URL('./kiosk.example.yaml', import.meta.url))
 
-/** Serves kiosk.yaml at /config/kiosk.yaml, like the production server does. */
+/**
+ * Serves kiosk.yaml and the editor's ./layout.yaml (git-ignored) with the same
+ * routes as the production server (server/kiosk.ts).
+ */
 function kioskConfig(): Plugin {
   return {
     name: 'kiosk-config',
     configureServer(server) {
+      const routes = createKioskRoutes({ configPath: CONFIG, fallbackConfigPath: EXAMPLE_CONFIG })
       server.middlewares.use((req, res, next) => {
-        if (!req.url?.startsWith('/config/kiosk.yaml')) return next()
-        readConfig(CONFIG, EXAMPLE_CONFIG).then(
-          ({ text, isExample }) => {
-            res.writeHead(200, {
-              'content-type': 'text/yaml',
-              'cache-control': 'no-store',
-              ...(isExample && { [EXAMPLE_HEADER]: 'example' }),
-            })
-            res.end(text)
-          },
-          () => res.writeHead(404).end(),
-        )
+        void routes.handleRequest(req, res).then((handled) => handled || next())
       })
       // The editor schema, like the production server (without entity suggestions).
       server.middlewares.use('/kiosk.schema.json', (_req, res) => {

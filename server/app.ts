@@ -1,5 +1,5 @@
-// The whole production server in one process: the built page, kiosk.yaml and the
-// Home Assistant auth proxy. The HA token only ever lives here, never in the
+// The whole production server in one process: the built page, kiosk.yaml (and the
+// editor's layout.yaml, see kiosk.ts) and the Home Assistant auth proxy. The HA token only ever lives here, never in the
 // browser (see haProxy.ts).
 
 import { readFile, stat } from 'node:fs/promises'
@@ -7,7 +7,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import type { Duplex } from 'node:stream'
 
-import { createHaProxy, EXAMPLE_HEADER, readConfig } from './haProxy.ts'
+import { createHaProxy } from './haProxy.ts'
+import { createKioskRoutes } from './kiosk.ts'
 import { createSchemaHandler } from './schema.ts'
 
 export interface AppOptions {
@@ -48,6 +49,7 @@ export function createApp({
   schemaEntities = false,
 }: AppOptions) {
   const proxy = createHaProxy({ haUrl, token, configPath, fallbackConfigPath })
+  const kiosk = createKioskRoutes({ configPath, fallbackConfigPath })
   const schema =
     schemaPath && createSchemaHandler({ schemaPath, withEntities: schemaEntities, haUrl, token })
   const root = normalize(distDir + sep)
@@ -59,23 +61,6 @@ export function createApp({
       'cache-control': cacheControl,
     })
     res.end(body)
-  }
-
-  async function serveConfig(res: ServerResponse) {
-    try {
-      const { text, isExample } = await readConfig(configPath, fallbackConfigPath)
-      // Polled for changes by the kiosk: never cache it.
-      res.writeHead(200, {
-        'content-type': 'text/yaml; charset=utf-8',
-        'cache-control': 'no-store',
-        // The kiosk shows a "this is the example" banner.
-        ...(isExample && { [EXAMPLE_HEADER]: 'example' }),
-      })
-      res.end(text)
-    } catch (error) {
-      console.error(`[server] cannot read ${configPath}:`, (error as Error).message)
-      res.writeHead(404, { 'cache-control': 'no-store' }).end()
-    }
   }
 
   async function serveStatic(res: ServerResponse, pathname: string) {
@@ -98,8 +83,8 @@ export function createApp({
     try {
       if (pathname === '/healthz') return void res.writeHead(204).end()
       if (pathname.startsWith('/api/')) return await proxy.handleRequest(req, res)
+      if (await kiosk.handleRequest(req, res)) return
       if (req.method !== 'GET' && req.method !== 'HEAD') return void res.writeHead(405).end()
-      if (pathname === '/config/kiosk.yaml') return await serveConfig(res)
       if (pathname === '/kiosk.schema.json' && schema) {
         const body = await schema()
         res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-cache' })
