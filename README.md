@@ -16,7 +16,7 @@ An Apple Home style wall dashboard for [Home Assistant](https://www.home-assista
    docker run -d --name open-homeview --restart unless-stopped -p 8080:8080 \
      -e HA_URL=http://homeassistant.local:8123 \
      -e HA_TOKEN=your-token \
-     -v ./config:/config:ro \
+     -v ./config:/config \
      ghcr.io/miladd3/open-homeview:latest
    ```
 
@@ -38,6 +38,7 @@ Images are built for `amd64` and `arm64`. Tags: `latest` (main branch), and `x.y
 
 - The page has **no login**. Keep it on your home network and never expose it to the internet without a login in front of it.
 - The HA token stays in the container. The browser connects to the container, which swaps in the token and drops any request for an entity that isn't in `kiosk.yaml` (no area or device targets either).
+- The container only writes one file: `layout.yaml`, the on-screen dashboard layout. It never adds entities (see [Screens](#screens)). Set `editPin` if people you don't trust can reach the screen or your network.
 - Use a dedicated non-admin HA user, so the token can't change Home Assistant's settings even if it leaks.
 
 ## Screens
@@ -52,11 +53,13 @@ Images are built for `amd64` and `arm64`. Tags: `latest` (main branch), and `x.y
 
 Rooms are the Lights app's groups. On a group's widget, the round icon toggles its lights; a tap anywhere else opens the Lights app scrolled to that room. **Long-press** a light or room widget for a brightness slider.
 
+**Edit the dashboard on the screen:** long-press the Home screen (or a widget without a slider). Drag widgets to reorder them (hold at the screen's edge to move to the next page), tap the size badge to cycle its sizes, – removes, ＋ adds from a gallery, **Done** saves. Edits go to `layout.yaml` next to `kiosk.yaml`, which then replaces kiosk.yaml's `dashboard` (so `/config` must be writable: no `:ro`). **Reset layout** deletes it. The gallery only offers what `kiosk.yaml` already has (apps, Lights groups, clock, weather, and the IDs in `entities:`), and the server refuses a layout with anything else, so nobody at the screen can widen what the kiosk reaches. A broken `layout.yaml` is ignored, with a warning on the **kiosk.yaml** notice.
+
 ## Configuration: `kiosk.yaml`
 
 Apps, the dashboard, scenes, events, weather, color swatches, the theme, wallpaper and standby faces all live in `kiosk.yaml`. Start from [`kiosk.example.yaml`](kiosk.example.yaml). The file has comments for every section. It is loaded at runtime, not bundled:
 
-- In Docker it is mounted at `/config/kiosk.yaml`. Until it exists, the kiosk shows the example, with a **kiosk.yaml** notice on the Home screen explaining what to do.
+- In Docker it is mounted at `/config/kiosk.yaml`. Until it exists, the kiosk shows the example, with a **kiosk.yaml** notice on the Home screen explaining what to do. The container runs as user `node` (uid 1000), which must be able to write the folder for the on-screen editor's `layout.yaml`.
 - The kiosk checks it every minute and **reloads itself when it changes**, so you never have to touch the screen. Edit the file and the wall screen updates within a minute.
 - A broken edit is never applied: a running kiosk keeps its last good config (the error is in the browser console), and a fresh start shows an error screen naming every bad key, with a suggestion for typos (e.g. `apps[0].groups[0].scene is not a known key. Did you mean "scenes"?`).
 - Entity IDs that Home Assistant doesn't know show up in the **kiosk.yaml** notice on the Home screen, instead of silently showing "Unavailable".
@@ -69,6 +72,7 @@ Apps, the dashboard, scenes, events, weather, color swatches, the theme, wallpap
 - `standby` is what the screen shows when idle: after `afterSeconds` (default 60), the `faces` you swipe through, then a tap wakes to Home. A face entry is `night` or `{ face: modular, color: '#ff9f0a', slots: { right1: weather } }`: the face's own keys sit next to `face:`, and `slots` take dashboard entries for widgets that can sit on a face (a tap on one does the widget's action, not wake). During `night.hours` (default 22 to 7) only `night.face` shows (default `night`), dimmed. Without `standby`: big-clock with the weather. Faces: `big-clock`, `modular`, `home-modular`, `night`. Faces move a few pixels every minute against burn-in.
 - `theme` is the look: `glass` (the default), `liquid-glass` or `flat-light` (HomeView's light lavender look). The long form `{ name: glass, graphics: lite, tint: '#7d6bff', mode: auto }` picks the `lite` version (no blur or soft shadows, for the Pi), one accent colour for the whole UI, and `light`, `dark` or `auto` (dark during standby's night hours) for themes that have both. Standby faces stay on black and use the theme's dark mode.
 - `wallpaper: [from, to]` puts your own two colours behind everything, over the theme's.
+- `entities` lists more entity IDs the on-screen editor may offer as widgets (a `light.*` gets a light widget, `scene.*` a scene…). `editPin: '1234'` locks edit mode with a PIN; the server checks it and never sends it to the page (5 wrong tries lock it for a minute).
 - An app's entity IDs go right on the app (`camera: camera.front_door`, `player: media_player.tv`).
 - The `lights` app lists `groups` (usually rooms), each with a `name`, an optional `icon`, its `lights` and optional `scenes`. A group's `id` defaults to its name in lower case with dashes (`Living Room` → `living-room`).
 
@@ -128,7 +132,7 @@ Without `HA_URL`/`HA_TOKEN` in `.env.local`, `npm run dev` runs against an in-me
 
 ```
 kiosk.example.yaml        # example config: copy to kiosk.yaml
-server/                   # Node server (runs .ts directly): serves the page + kiosk.yaml, and the HA auth proxy
+server/                   # Node server (runs .ts directly): serves the page, kiosk.yaml and layout.yaml (kiosk.ts), and the HA auth proxy
 src/
   apps/                 # every app type, one folder each (see "App types" below)
   faces/                # every standby face, one folder each (see "Faces" below)
@@ -141,7 +145,7 @@ src/
   components/
     atoms/              # IconButton, RangeSlider, ProgressBar, ToggleSwitch
     molecules/          # ClockDisplay, CameraFeed
-    organisms/          # DashboardHost (the grid), WidgetCell, DefaultWidget, StandbyHost (faces), DevToolbar, ConfigHelpDialog
+    organisms/          # DashboardHost (the grid, and edit mode), WidgetCell, DefaultWidget, EditGallery, PinPad, StandbyHost (faces), DevToolbar, ConfigHelpDialog
   views/                # HomeView, ConfigErrorView
   styles/               # sizes and timings shared by every theme + base reset
 ```

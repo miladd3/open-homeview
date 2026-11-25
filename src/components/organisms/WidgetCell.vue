@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onErrorCaptured, onMounted, ref, useTemplateRef } from 'vue'
 
 import { hasScreen, quickOf, widgetOf } from '@/apps'
+import { useLongPress } from '@/composables/useLongPress'
 import type { DashboardWidget } from '@/config/home'
 import type { WidgetMode } from '@/kit/define'
 import type { OpenAppOptions } from '@/stores/kiosk'
@@ -9,15 +10,14 @@ import { useKioskStore } from '@/stores/kiosk'
 
 // One widget on the dashboard or in a face slot. Catches the widget's errors (a
 // grey cell instead of a broken page), opens its app's screen on `open`, and
-// shows the type's quick control over it on a long-press.
+// shows the type's quick control over it on a long-press (or emits `longpress`
+// when it has none: the dashboard then enters edit mode).
 // In a face slot (`complication`), it sets `--cell` from its own height, which
 // DashboardHost sets for the grid.
-const LONG_PRESS_MS = 500
-const MOVE_TOLERANCE_PX = 10
-
 const props = withDefaults(defineProps<{ widget: DashboardWidget; mode?: WidgetMode }>(), {
   mode: 'dashboard',
 })
+const emit = defineEmits<{ longpress: [] }>()
 
 const kiosk = useKioskStore()
 const failed = ref(false)
@@ -50,42 +50,12 @@ function open(options?: OpenAppOptions) {
   if (hasScreen(props.widget.app)) kiosk.openApp(props.widget.app.id, options)
 }
 
-let pressTimer: ReturnType<typeof setTimeout> | undefined
-let pressStart: { x: number; y: number } | undefined
-let longPressed = false
-
-function onPointerDown(event: PointerEvent) {
-  longPressed = false
-  if (!quick.value) return
-  pressStart = { x: event.clientX, y: event.clientY }
-  pressTimer = setTimeout(() => {
-    longPressed = true
-    showQuick.value = true
-  }, LONG_PRESS_MS)
-}
-
-function onPointerMove(event: PointerEvent) {
-  if (!pressStart) return
-  const moved = Math.hypot(event.clientX - pressStart.x, event.clientY - pressStart.y)
-  if (moved > MOVE_TOLERANCE_PX) cancelPress()
-}
-
-function cancelPress() {
-  clearTimeout(pressTimer)
-  pressStart = undefined
-}
-
-// The click that ends a long-press must not also tap the widget.
-function onClickCapture(event: MouseEvent) {
-  if (!longPressed) return
-  event.stopPropagation()
-  longPressed = false
-}
-
-onBeforeUnmount(() => {
-  cancelPress()
-  observer?.disconnect()
+const longPress = useLongPress(() => {
+  if (quick.value) showQuick.value = true
+  else emit('longpress')
 })
+
+onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
@@ -94,11 +64,11 @@ onBeforeUnmount(() => {
     class="widget-cell"
     :class="{ '-quick': showQuick }"
     :style="cell ? { '--cell': `${cell}px` } : undefined"
-    @pointerdown="onPointerDown"
-    @pointermove="onPointerMove"
-    @pointerup="cancelPress"
-    @pointercancel="cancelPress"
-    @click.capture="onClickCapture"
+    @pointerdown="longPress.onPointerdown"
+    @pointermove="longPress.onPointermove"
+    @pointerup="longPress.onPointerup"
+    @pointercancel="longPress.onPointercancel"
+    @click.capture="longPress.onClickCapture"
     @contextmenu.prevent
   >
     <div v-if="failed" class="error">Widget error</div>

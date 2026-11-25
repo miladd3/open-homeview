@@ -181,6 +181,20 @@ dashboard:
     - { type: sensor, entity: sensor.outdoor_temperature, name: Outside, size: 2x1 }
     - { type: sensor, entity: sensor.outdoor_humidity, name: Humidity }
 
+# Edit the dashboard on the screen: long-press it. Drag to reorder (hold at the
+# edge for the next page), tap the size to change it, – removes, ＋ adds, Done
+# saves to layout.yaml next to this file (it then replaces `dashboard` above;
+# "Reset layout" deletes it). The ＋ gallery offers your apps, Lights groups,
+# clock, weather, and a widget for each entity listed here. Nothing else: the
+# screen can never reach more than this file lists.
+entities:
+  - light.kitchen
+  - scene.bedroom_read
+  - sensor.indoor_temperature
+
+# Lock edit mode with a PIN (quote it). The server checks it; the page never sees it.
+# editPin: '1234'
+
 # Things happening in Home Assistant that open an app on their own, over
 # everything (also wakes from standby).
 #   entity: an event.* entity (doorbell ring, button press) fires every time it

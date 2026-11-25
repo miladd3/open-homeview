@@ -8,4 +8,4 @@ services:
       - 8080:8080
     env_file: .env # HA_URL and HA_TOKEN, see .env.example
     volumes:
-      - ./config:/config:ro # put your kiosk.yaml here
+      - ./config:/config # your kiosk.yaml; the kiosk writes layout.yaml here
