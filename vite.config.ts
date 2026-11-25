@@ -60,6 +60,51 @@ function haProxy(haUrl: string, token: string): Plugin {
   }
 }
 
+/**
+ * What runtime packs import instead of bundling (see src/addons.ts). The build
+ * puts each in a file with a fixed name under /addon-kit/, keeping all its
+ * exports, and an import map in index.html points the names at them. The
+ * kiosk's own code imports the same files, so there is only one copy of each.
+ */
+const ADDON_MODULES: Record<string, string> = {
+  vue: 'vue',
+  zod: 'zod',
+  '@open-homeview/kit': fileURLToPath(new URL('./src/kit/index.ts', import.meta.url)),
+  '@open-homeview/kit/define': fileURLToPath(new URL('./src/kit/define.ts', import.meta.url)),
+}
+const addonFile = (name: string) =>
+  `addon-kit/${name.replace(/^@open-homeview\//, '').replace('/', '-')}.js`
+
+function addonModules(): Plugin {
+  let base = '/'
+  return {
+    name: 'addon-modules',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base
+    },
+    buildStart() {
+      for (const [name, id] of Object.entries(ADDON_MODULES))
+        this.emitFile({ type: 'chunk', id, fileName: addonFile(name), preserveSignature: 'strict' })
+    },
+    transformIndexHtml: {
+      order: 'pre',
+      handler: () => [
+        {
+          tag: 'script',
+          attrs: { type: 'importmap' },
+          children: JSON.stringify({
+            imports: Object.fromEntries(
+              Object.keys(ADDON_MODULES).map((name) => [name, `${base}${addonFile(name)}`]),
+            ),
+          }),
+          injectTo: 'head-prepend',
+        },
+      ],
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   // HA_URL / HA_TOKEN come from .env.local and stay on the server side: only
@@ -69,7 +114,13 @@ export default defineConfig(({ command, mode }) => {
   const mock = command === 'serve' && !live
 
   return {
-    plugins: [vue(), vueDevTools(), kioskConfig(), ...(live ? [haProxy(HA_URL!, HA_TOKEN!)] : [])],
+    plugins: [
+      vue(),
+      vueDevTools(),
+      kioskConfig(),
+      addonModules(),
+      ...(live ? [haProxy(HA_URL!, HA_TOKEN!)] : []),
+    ],
     define: {
       'import.meta.env.VITE_HA_MOCK': JSON.stringify(String(mock)),
     },
