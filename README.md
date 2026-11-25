@@ -72,6 +72,7 @@ Apps, the dashboard, scenes, events, weather, color swatches, the theme, wallpap
 - `standby` is what the screen shows when idle: after `afterSeconds` (default 60), the `faces` you swipe through, then a tap wakes to Home. A face entry is `night` or `{ face: modular, color: '#ff9f0a', slots: { right1: weather } }`: the face's own keys sit next to `face:`, and `slots` take dashboard entries for widgets that can sit on a face (a tap on one does the widget's action, not wake). During `night.hours` (default 22 to 7) only `night.face` shows (default `night`), dimmed. Without `standby`: big-clock with the weather. Faces: `big-clock`, `modular`, `home-modular`, `night`. Faces move a few pixels every minute against burn-in.
 - `theme` is the look: `glass` (the default), `liquid-glass` or `flat-light` (HomeView's light lavender look). The long form `{ name: glass, graphics: lite, tint: '#7d6bff', mode: auto }` picks the `lite` version (no blur or soft shadows, for the Pi), one accent colour for the whole UI, and `light`, `dark` or `auto` (dark during standby's night hours) for themes that have both. Standby faces stay on black and use the theme's dark mode.
 - `wallpaper: [from, to]` puts your own two colours behind everything, over the theme's.
+- `addons: [garage-door]` loads runtime packs from `/config/addons/` (see [Add-ons](#add-ons)).
 - `entities` lists more entity IDs the on-screen editor may offer as widgets (a `light.*` gets a light widget, `scene.*` a scene…). `editPin: '1234'` locks edit mode with a PIN; the server checks it and never sends it to the page (5 wrong tries lock it for a minute).
 - An app's entity IDs go right on the app (`camera: camera.front_door`, `player: media_player.tv`).
 - The `lights` app lists `groups` (usually rooms), each with a `name`, an optional `icon`, its `lights` and optional `scenes`. A group's `id` defaults to its name in lower case with dashes (`Living Room` → `living-room`).
@@ -104,6 +105,18 @@ In production the proxy runs in the same Node process that serves the page ([`se
 
 **Token:** create a dedicated **non-admin** HA user (e.g. `kiosk`), log in as it, and create a long-lived access token under _Profile → Security_. Pass it as `HA_TOKEN` (Docker) or put it in `.env.local` (dev), see [`.env.example`](.env.example).
 
+## Add-ons
+
+App types, faces and themes are folders, and anyone can write one: see [CONTRIBUTING.md](CONTRIBUTING.md) and the [gallery](docs/gallery.md) of built-in ones. Share yours with a pull request, or as a **runtime pack** that needs no rebuild of the kiosk:
+
+1. Build it: `npm run build:addon src/apps/garage-door 1.0.0` writes `dist-addon/garage-door/`.
+2. Copy that folder to `/config/addons/garage-door/` on the server, next to `kiosk.yaml`.
+3. List it in `kiosk.yaml`: `addons: [garage-door]`. The kiosk reloads by itself.
+
+Only listed packs load, and only in the built kiosk (not `npm run dev`). A pack built for another kit major, one whose name a built-in folder already has, or one that fails to load is skipped, with a warning on the **kiosk.yaml** notice; the kiosk keeps running. A widget or face from a pack that throws shows as an error cell, like a built-in one.
+
+**Trust:** a runtime pack is code you choose to run. It can't see the Home Assistant token, and it can only reach the entities listed in `kiosk.yaml`. It can still do anything a web page can do, so only install packs you trust (their `index.js` is not minified: read it first).
+
 ## Wall screen
 
 Any device that can show a full-screen browser works. On a Raspberry Pi with Raspberry Pi OS:
@@ -124,6 +137,10 @@ npm run test:unit
 npm run lint                 # oxlint
 npm run format               # oxfmt (Prettier-compatible output)
 npm run build                # type-check + production build
+npm run new app <type>       # a new app type (or: face <id>, theme <id>) from templates/
+npm run build:addon <folder> # a runtime pack in dist-addon/
+npm run schema               # after changing the config schema or adding a folder
+npm run gallery              # docs/gallery.md, after adding a folder or its preview.png
 ```
 
 Without `HA_URL`/`HA_TOKEN` in `.env.local`, `npm run dev` runs against an in-memory **mock** built from `kiosk.yaml` (or the example). Add `?mock` to any URL to force the mock. In mock mode a small **Mock** toolbar (bottom-right) has a button for each of your `events` (fires it, like a doorbell ring) and one for standby. Keyboard: `E` = first event, `S` = standby.
@@ -132,8 +149,12 @@ Without `HA_URL`/`HA_TOKEN` in `.env.local`, `npm run dev` runs against an in-me
 
 ```
 kiosk.example.yaml        # example config: copy to kiosk.yaml
-server/                   # Node server (runs .ts directly): serves the page, kiosk.yaml and layout.yaml (kiosk.ts), and the HA auth proxy
+server/                   # Node server (runs .ts directly): serves the page, kiosk.yaml, layout.yaml and packs (kiosk.ts), and the HA auth proxy
+scripts/                  # npm run new (new.ts) and npm run build:addon (build-addon.ts)
+templates/                # what npm run new copies: a small app type, face and theme that work as they are
+docs/gallery.md           # every folder's preview, generated by npm run gallery
 src/
+  addons.ts             # loads the runtime packs kiosk.yaml lists, before the rest (main.ts, then boot.ts)
   apps/                 # every app type, one folder each (see "App types" below)
   faces/                # every standby face, one folder each (see "Faces" below)
   themes/               # every theme, one folder each (see "Themes" below); ThemeHost puts the theme on <html>
@@ -169,7 +190,7 @@ src/apps/vacuum/
 - `settings` are keys of the widget itself on a dashboard entry (`group` on a Lights widget), checked like app keys; `check` cross-checks them against the app.
 - A type without `widget` gets a 1×1 one from its `status` (icon, name, status text; tap opens the screen). A type without `screen` is widget-only (clock, scene…).
 
-App folders import only from `@/kit` (UI), `@/kit/define` (`index.ts`), `vue`, `@lucide/vue` and their own folder; `npm run lint` enforces it. Talk to Home Assistant with `useEntity` and `useService`. To add one: copy a small folder like `switch/` or `lock/`, then run `npm run schema`. The screen and widget are lazy imports (`screen: () => import('./VacuumPanel.vue')`), so the schema loads without the UI and each is its own chunk. A widget that throws shows as a grey "Widget error" cell; the rest of the dashboard keeps working.
+App folders import only from `@/kit` (UI), `@/kit/define` (`index.ts`), `vue`, `@lucide/vue` and their own folder; `npm run lint` enforces it. Talk to Home Assistant with `useEntity` and `useService`. To add one: `npm run new app <type>`, then see [CONTRIBUTING.md](CONTRIBUTING.md). The screen and widget are lazy imports (`screen: () => import('./VacuumPanel.vue')`), so the schema loads without the UI and each is its own chunk. A widget that throws shows as a grey "Widget error" cell; the rest of the dashboard keeps working.
 
 ### Faces
 
@@ -185,7 +206,7 @@ src/faces/modular/
 - `slots` name the places for widgets and the sizes each takes (`right1: { sizes: ['1x1'] }`). `<FaceSlot>` renders the widget kiosk.yaml put there, in `complication` mode, or nothing. Only widgets whose type sets `complication: true` may sit in a slot.
 - `StandbyHost` does the rest: the idle timer, swiping, tap to wake, night hours and the burn-in shift. A face only draws itself: no timers but `useNow` (once a second), and animate only `transform` and `opacity`.
 
-Face folders follow the same import rule as app folders. To add one: copy `night/`, then run `npm run schema`.
+Face folders follow the same import rule as app folders. To add one: `npm run new face <id>`.
 
 ### Themes
 
@@ -203,7 +224,7 @@ src/themes/liquid-glass/
 - [`src/themes/glass/tokens.scss`](src/themes/glass/tokens.scss) lists every token, with comments; every theme sets all of them (a test checks it). Themes change colours, material, radius, font, shadows and motion curves, never layout or sizes.
 - `ThemeHost` sets `data-theme`, `data-mode` and `data-graphics` on `<html>`, and `--tint` from kiosk.yaml (tokens use it as `var(--tint, <default>)`).
 
-Theme folders follow the same import rule as app folders. To add one: copy `glass/`.
+Theme folders follow the same import rule as app folders. To add one: `npm run new theme <id>`.
 
 ### Styling conventions
 
