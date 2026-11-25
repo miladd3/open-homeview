@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineComponent, h, type PropType, provide } from 'vue'
+import { computed, defineComponent, h, onErrorCaptured, type PropType, provide, ref } from 'vue'
 
 import { useIdle } from '@/composables/useIdle'
 import { useNow } from '@/composables/useNow'
@@ -33,19 +33,30 @@ const shift = computed(() => {
   return `${((minute * 7) % 21) - 10}px, ${((minute * 11) % 21) - 10}px`
 })
 
-/** One face, with the widgets of its slots for its <FaceSlot>s. */
+/**
+ * One face, with the widgets of its slots for its <FaceSlot>s. A face that
+ * throws shows "Face error" instead; standby keeps working.
+ */
 const FaceView = defineComponent({
   props: {
     entry: { type: Object as PropType<FaceEntry>, required: true },
     night: { type: Boolean, required: true },
   },
   setup(props) {
+    const failed = ref(false)
+    onErrorCaptured((error) => {
+      console.error(`[standby] the ${props.entry.face} face failed:`, error)
+      failed.value = true
+      return false
+    })
     provide(FACE_SLOTS, (name) => {
       const widget = props.entry.slots[name]
       return widget && h(WidgetCell, { widget, mode: 'complication' })
     })
     return () =>
-      h(faceScreenOf(props.entry.face), { options: props.entry.options, night: props.night })
+      failed.value
+        ? h('p', { class: 'face-error' }, 'Face error')
+        : h(faceScreenOf(props.entry.face), { options: props.entry.options, night: props.night })
   },
 })
 
@@ -106,6 +117,14 @@ function onClick(event: MouseEvent) {
     height: calc(100% + 20px);
     transform: translate(var(--shift));
     transition: transform 4s ease;
+  }
+
+  > .page > .face-error {
+    display: grid;
+    place-items: center;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 24px;
   }
 
   &.-night > .page {
