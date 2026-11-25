@@ -1,0 +1,13 @@
+// Live blur behind glass re-renders whatever is underneath on every frame, which a
+// small GPU like the Pi's can't keep up with during animations. Lite swaps it for
+// solid fills that look nearly the same over the static wallpaper.
+[data-theme='example'][data-graphics='lite'] {
+  --surface-bg: rgb(255 255 255 / 10%);
+  --surface-filter: none;
+  --widget-shadow: none;
+  --sheet-bg: rgb(34 34 40);
+  --sheet-filter: none;
+  --sheet-shadow: none;
+  --scrim-bg: rgb(0 0 0 / 65%);
+  --scrim-filter: none;
+}

@@ -9,7 +9,7 @@
   },
   "overrides": [
     {
-      "files": ["src/apps/*/**", "src/faces/*/**", "src/themes/*/**"],
+      "files": ["src/apps/*/**", "src/faces/*/**", "src/themes/*/**", "templates/*/**"],
       "excludeFiles": ["**/__tests__/**"],
       "rules": {
         "no-restricted-imports": [

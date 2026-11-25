@@ -41,7 +41,7 @@ describe('a built-in folder built as a pack', () => {
       version: '1.2.0',
       kit: 1,
       description: 'Any on/off entity, with optional sensors.',
-      files: ['chunks/', 'index.js', 'style.css'],
+      files: ['chunks/', 'index.js', 'preview.png', 'style.css'],
     })
   })
 

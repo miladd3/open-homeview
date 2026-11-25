@@ -4,5 +4,5 @@
   "singleQuote": true,
   "printWidth": 100,
   "sortPackageJson": false,
-  "ignorePatterns": ["kiosk.schema.json"]
+  "ignorePatterns": ["kiosk.schema.json", "docs/gallery.md"]
 }
