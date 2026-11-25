@@ -16,7 +16,12 @@ const missing = useMissingEntities()
 const showConfigHelp = ref(false)
 const configNotice = computed(() => {
   if (config.isExample) return 'Example config'
-  return missing.value.length ? `${missing.value.length} not found` : null
+  const notes = [
+    missing.value.length && `${missing.value.length} not found`,
+    config.warnings.length &&
+      `${config.warnings.length} warning${config.warnings.length > 1 ? 's' : ''}`,
+  ].filter(Boolean)
+  return notes.length ? notes.join(' · ') : null
 })
 </script>
 
@@ -44,6 +49,7 @@ const configNotice = computed(() => {
         v-if="showConfigHelp"
         :is-example="config.isExample"
         :missing="missing"
+        :warnings="config.warnings"
         @close="showConfigHelp = false"
       />
     </Transition>

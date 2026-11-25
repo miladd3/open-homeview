@@ -5,7 +5,7 @@ import { parseConfigSource } from '@/config/load'
 import { faceTypes } from '@/faces'
 
 /** The example config, so tests also prove the shipped example is valid. */
-export const testConfig = parseConfigSource(source)
+export const testConfig = parseConfigSource(source).home
 
 export const vacuumApp = testConfig.apps.find((app): app is VacuumApp => app.type === 'vacuum')!
 

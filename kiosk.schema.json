@@ -167,6 +167,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -282,6 +283,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -391,6 +393,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -493,6 +496,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -602,6 +606,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -706,6 +711,7 @@
                             "monitor",
                             "music",
                             "plug",
+                            "plus",
                             "shield",
                             "shield-check",
                             "shower",
@@ -865,6 +871,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -974,6 +981,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -1083,6 +1091,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -1192,6 +1201,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -1317,6 +1327,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -1439,6 +1450,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -1613,6 +1625,7 @@
                       "monitor",
                       "music",
                       "plug",
+                      "plus",
                       "shield",
                       "shield-check",
                       "shower",
@@ -1827,6 +1840,42 @@
             ],
             "additionalProperties": false
           }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "entities": {
+      "description": "More entities the on-screen editor's gallery may offer as widgets (lights, scenes, sensors…).",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z_]+\\.[a-z0-9_]+$",
+            "x-entity-domain": "*",
+            "description": "An entity ID from Home Assistant."
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "editPin": {
+      "description": "A PIN to edit the dashboard on the screen. Quote it ('0123'). Leave out for no PIN.",
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "number"
+            }
+          ]
         },
         {
           "type": "null"

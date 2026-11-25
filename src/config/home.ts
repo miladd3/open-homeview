@@ -53,6 +53,8 @@ export interface DashboardWidget {
   size: WidgetSize
   /** The widget's own keys, e.g. `group` for a Lights widget. */
   settings: Record<string, unknown>
+  /** How kiosk.yaml writes it, without `size`. The on-screen editor saves this. */
+  entry: DashboardEntry
 }
 
 /** A face as kiosk.yaml sets it: which one, its options, and the widgets in its slots. */
@@ -94,6 +96,8 @@ export interface HomeConfig {
   apps: AppConfig[]
   /** Pages of widgets. Generated from the apps when kiosk.yaml has no `dashboard:`. */
   dashboard: DashboardWidget[][]
+  /** What the on-screen editor may add: only things kiosk.yaml already has. */
+  gallery: DashboardWidget[]
   events: EventConfig[]
   standby: StandbyConfig
 }
@@ -177,7 +181,10 @@ const dashboardEntry = z
       'A widget: `clock`, `{ app: <id> }` for an app in `apps:`, or `{ type: <type>, ... }` written inline.',
   })
 
-type DashboardEntry = z.output<typeof dashboardEntry>
+/** A dashboard entry as kiosk.yaml (or layout.yaml) writes it: `clock`, `{ app: tv }`, `{ type: …, … }`. */
+export type DashboardEntry =
+  | string
+  | { app?: string; type?: string; size?: WidgetSize; [key: string]: unknown }
 type Issue = { message: string; path: PropertyKey[] } & Partial<z.core.$ZodIssue>
 
 type Report = (issue: Issue) => void
@@ -202,6 +209,7 @@ function entryResolver(
   return function resolve(entry: DashboardEntry, at: PropertyKey[]): DashboardWidget | undefined {
     const { app: appId, type, size, ...rest } = typeof entry === 'string' ? { type: entry } : entry
     let app: AppConfig | undefined
+    let isInline = false
     let settings: Record<string, unknown> = rest
     if (appId !== undefined) {
       if (type !== undefined) return void report({ path: at, message: 'has both `app` and `type`' })
@@ -227,7 +235,7 @@ function entryResolver(
       const parsed = definition.inlineSchema.safeParse({ type, ...own }, { reportInput: true })
       if (!parsed.success) return void reportAll(report, parsed.error.issues, at)
       app = finishApp({ ...parsed.data, id: at.join('/') }, context)
-      inline.push(app)
+      isInline = true
     }
 
     const definition = appTypeOf(app.type)!
@@ -242,8 +250,15 @@ function entryResolver(
     })
     if (!parsed.success) return void reportAll(report, parsed.error.issues, at)
     const problem = definition.widget?.check?.(app, parsed.data)
-    if (problem) report({ path: at, message: problem })
-    return { app, size: size ?? sizes[0]!, settings: parsed.data }
+    if (problem) return void report({ path: at, message: problem })
+    if (isInline) inline.push(app)
+    return {
+      app,
+      size: size ?? sizes[0]!,
+      settings: parsed.data,
+      entry:
+        typeof entry === 'string' ? entry : { ...(appId ? { app: appId } : { type }), ...rest },
+    }
   }
 }
 
@@ -350,7 +365,7 @@ function generateDashboard(
     const parsed = appTypeOf(type)!.inlineSchema.parse({ type })
     const app = finishApp({ ...parsed, id: `dashboard/${type}` }, context)
     inline.push(app)
-    return { app, size: widgetSizes(app)[0]!, settings: {} }
+    return { app, size: widgetSizes(app)[0]!, settings: {}, entry: type }
   }
   const shown = apps.filter((app) => !app.hidden)
   return [
@@ -363,14 +378,49 @@ function generateDashboard(
               app,
               size: widgetSizes(app)[0]!,
               settings: { group: group.id },
+              entry: { app: app.id, group: group.id },
             }))
           : [],
       ),
       ...shown
         .filter((app) => app.type !== 'lights')
-        .map((app) => ({ app, size: widgetSizes(app)[0]!, settings: {} })),
+        .map((app) => ({ app, size: widgetSizes(app)[0]!, settings: {}, entry: { app: app.id } })),
     ],
   ]
+}
+
+/**
+ * What the on-screen editor's gallery offers: every app (and each Lights group),
+ * the types that need no keys (clock, weather when `weather:` is set) and a
+ * widget for each ID in `entities:`. Nothing that isn't in kiosk.yaml already.
+ */
+function buildGallery(
+  apps: AppConfig[],
+  entityIds: string[],
+  resolverWith: (report: Report) => ReturnType<typeof entryResolver>,
+  report: Report,
+): DashboardWidget[] {
+  const widgetOnly = appTypes.filter((t) => !t.screen).map((t) => t.type)
+  const gallery: DashboardWidget[] = []
+  // A candidate that doesn't resolve (weather without `weather:`) is left out.
+  const offer = (entry: DashboardEntry) => {
+    let failed = false
+    const widget = resolverWith(() => (failed = true))(entry, ['gallery', gallery.length])
+    if (widget && !failed) gallery.push(widget)
+    return Boolean(widget && !failed)
+  }
+  widgetOnly.forEach(offer)
+  for (const app of apps) {
+    offer({ app: app.id })
+    if (app.type === 'lights')
+      (app as LightsApp).groups.forEach((group) => offer({ app: app.id, group: group.id }))
+  }
+  entityIds.forEach((id, i) => {
+    if (widgetOnly.some((type) => offer({ type, entity: id }))) return
+    const domain = id.slice(0, id.indexOf('.'))
+    report({ path: ['entities', i], message: `no widget takes ${domain}.* entities` })
+  })
+  return gallery
 }
 
 // ---- theme ----
@@ -435,6 +485,14 @@ export const kioskYamlSchema = object({
       'Things in Home Assistant that open an app on their own, e.g. a ring opens the camera.',
   }),
   colors: optional(z.array(colorPreset)).meta({ description: 'Color swatches for lights.' }),
+  entities: list(entity()).meta({
+    description:
+      "More entities the on-screen editor's gallery may offer as widgets (lights, scenes, sensors…).",
+  }),
+  editPin: optional(z.union([text, z.number()])).meta({
+    description:
+      "A PIN to edit the dashboard on the screen. Quote it ('0123'). Leave out for no PIN.",
+  }),
   standby: object({
     afterSeconds: seconds(60, 'Seconds without a touch before standby.'),
     faces: optional(z.array(faceEntry).min(1, 'needs a face')).meta({
@@ -499,7 +557,8 @@ export const kioskYamlSchema = object({
     const inline: AppConfig[] = []
     const report: Report = (issue) =>
       ctx.addIssue({ code: 'custom', ...issue } as z.core.$ZodRawIssue)
-    const resolve = entryResolver(apps, context, inline, report)
+    const resolverWith = (r: Report) => entryResolver(apps, context, inline, r)
+    const resolve = resolverWith(report)
     const dashboard = raw.dashboard
       ? raw.dashboard.map((page, p) =>
           page.flatMap((entry, i) => resolve(entry, ['dashboard', p, i]) ?? []),
@@ -517,12 +576,15 @@ export const kioskYamlSchema = object({
       faces: faces.map((entry, i) => face(entry, ['faces', i])),
       night: { hours: standby.night.hours, face: face(standby.night.face, ['night', 'face']) },
     }
+    // Before `apps`, which takes the gallery's inline apps too.
+    const gallery = buildGallery(apps, raw.entities, resolverWith, report)
     return {
       wallpaper: raw.wallpaper,
       theme: raw.theme,
       weatherEntityId: raw.weather,
       apps: [...apps, ...inline],
       dashboard,
+      gallery,
       events: raw.events,
       standby: standbyConfig,
     }

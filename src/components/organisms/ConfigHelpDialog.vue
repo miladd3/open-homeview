@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { AppSheet } from '@/kit'
 
-// Explains what to fix in kiosk.yaml: still on the example, or entity IDs that
-// Home Assistant doesn't know.
-defineProps<{ isExample: boolean; missing: string[] }>()
+// Explains what to fix in kiosk.yaml: still on the example, entity IDs that
+// Home Assistant doesn't know, or problems the kiosk worked around (warnings).
+defineProps<{ isExample: boolean; missing: string[]; warnings: string[] }>()
 const emit = defineEmits<{ close: [] }>()
 </script>
 
@@ -11,7 +11,7 @@ const emit = defineEmits<{ close: [] }>()
   <AppSheet
     class="config-help-dialog"
     :app="{ name: 'kiosk.yaml', icon: 'file-cog' }"
-    :status="isExample ? 'Showing the example' : `${missing.length} not found`"
+    :status="isExample ? 'Showing the example' : 'Things to check'"
     @close="emit('close')"
   >
     <section v-if="isExample" class="section">
@@ -20,6 +20,13 @@ const emit = defineEmits<{ close: [] }>()
         Put your own <code>kiosk.yaml</code> in the <code>/config</code> folder of the container.
         Start from <code>kiosk.example.yaml</code>. The screen reloads by itself within a minute.
       </p>
+    </section>
+
+    <section v-if="warnings.length" class="section">
+      <h3 class="heading">Warnings</h3>
+      <ul class="ids">
+        <li v-for="warning in warnings" :key="warning" class="id">{{ warning }}</li>
+      </ul>
     </section>
 
     <section v-if="missing.length" class="section">
