@@ -13,7 +13,8 @@
     "lint": "oxlint --fix",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "schema": "UPDATE_SCHEMA=1 vitest run src/config/__tests__/schema.spec.ts"
+    "schema": "UPDATE_SCHEMA=1 vitest run src/config/__tests__/schema.spec.ts",
+    "build:addon": "node scripts/build-addon.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
