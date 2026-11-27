@@ -1,5 +1,7 @@
 import { parse } from 'yaml'
 
+import { demoConfigText, demoLayout, isDemo } from '@/demo'
+
 import { ConfigError, type HomeConfig, parseHomeConfig } from './home'
 
 export const CONFIG_URL = `${import.meta.env.BASE_URL}config/kiosk.yaml`
@@ -22,6 +24,13 @@ export async function fetchConfigSource(): Promise<ConfigSource> {
     fetch(LAYOUT_URL, { cache: 'no-store' }),
   ])
   if (!response.ok) throw new ConfigError(`${CONFIG_URL} returned HTTP ${response.status}`)
+  if (isDemo)
+    return {
+      text: demoConfigText(await response.text()),
+      layout: demoLayout(),
+      isExample: false,
+      pinSet: false,
+    }
   return {
     text: await response.text(),
     layout: layout.ok ? await layout.text() : undefined,

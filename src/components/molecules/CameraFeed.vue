@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
+import { isDemo } from '@/demo'
 import { useEntitiesStore } from '@/stores/entities'
 
 // Live camera view. Full-quality WebRTC video when HA supports it, with HA's MJPEG
@@ -69,7 +70,7 @@ onBeforeUnmount(() => {
     </template>
     <template v-else>
       <div class="scene" aria-hidden="true" />
-      <p v-if="!still" class="caption">Mock camera feed</p>
+      <p v-if="!still" class="caption">{{ isDemo ? 'Demo camera feed' : 'Mock camera feed' }}</p>
     </template>
   </div>
 </template>

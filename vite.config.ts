@@ -105,13 +105,32 @@ function addonModules(): Plugin {
   }
 }
 
+/**
+ * The public demo (`npm run build:site`): ships site/kiosk.demo.yaml as the
+ * static config/kiosk.yaml, since there is no server (see src/demo.ts).
+ */
+function demoConfig(): Plugin {
+  return {
+    name: 'demo-config',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'config/kiosk.yaml',
+        source: readFileSync(new URL('./site/kiosk.demo.yaml', import.meta.url)),
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   // HA_URL / HA_TOKEN come from .env.local and stay on the server side: only
   // VITE_-prefixed variables reach the browser.
   const { HA_URL, HA_TOKEN } = loadEnv(mode, process.cwd(), '')
   const live = command === 'serve' && Boolean(HA_URL && HA_TOKEN)
-  const mock = command === 'serve' && !live
+  const demo = mode === 'demo'
+  const mock = demo || (command === 'serve' && !live)
 
   return {
     plugins: [
@@ -120,9 +139,11 @@ export default defineConfig(({ command, mode }) => {
       kioskConfig(),
       addonModules(),
       ...(live ? [haProxy(HA_URL!, HA_TOKEN!)] : []),
+      ...(demo ? [demoConfig()] : []),
     ],
     define: {
       'import.meta.env.VITE_HA_MOCK': JSON.stringify(String(mock)),
+      'import.meta.env.VITE_DEMO': JSON.stringify(String(demo)),
     },
     resolve: {
       alias: {

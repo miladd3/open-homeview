@@ -2,9 +2,11 @@
 // Error with the server's reason ("Wrong PIN", "light.x is not in kiosk.yaml").
 
 import { widgetSizes } from '@/apps'
+import { demoCall, isDemo } from '@/demo'
 import type { DashboardEntry, DashboardWidget } from './home'
 
 async function call(method: string, path: string, pin?: string, body?: unknown) {
+  if (isDemo) return demoCall(method, path, body)
   const response = await fetch(`${import.meta.env.BASE_URL}kiosk/${path}`, {
     method,
     headers: {

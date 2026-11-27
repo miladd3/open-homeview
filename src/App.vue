@@ -5,6 +5,7 @@ import { isOverlay, screenOf } from '@/apps'
 import DevToolbar from '@/components/organisms/DevToolbar.vue'
 import StandbyHost from '@/components/organisms/StandbyHost.vue'
 import { useConfigReload } from '@/composables/useConfigReload'
+import { isDemo, listenToSite } from '@/demo'
 import { useEvents } from '@/composables/useEvents'
 import { useTouchCursor } from '@/composables/useTouchCursor'
 import { useConfigStore } from '@/stores/config'
@@ -37,6 +38,7 @@ useEvents((event) => kiosk.openApp(event.appId, { message: event.message }))
 useConfigReload()
 useTouchCursor()
 useThemeHost(config.home)
+if (isDemo && mock) listenToSite(mock, config, kiosk)
 </script>
 
 <template>
@@ -71,7 +73,7 @@ useThemeHost(config.home)
       />
     </Transition>
 
-    <DevToolbar v-if="mock" :mock="mock" />
+    <DevToolbar v-if="mock && !isDemo" :mock="mock" />
   </div>
 </template>
 

@@ -1,0 +1,254 @@
+# yaml-language-server: $schema=../kiosk.schema.json
+#
+# The config of the live demo on the project site (npm run build:site). It runs
+# against a fake Home Assistant in the browser, so any entity IDs work. Based on
+# kiosk.example.yaml: see that file for what every key does.
+
+# The look. Themes: glass (the default), liquid-glass, flat-light. Short form:
+# `theme: flat-light`.
+theme:
+  name: glass
+  # full: frosted-glass blur everywhere. lite: solid fills instead, much lighter
+  # on the Raspberry Pi's GPU. Switch and compare on the wall screen.
+  graphics: full
+  # tint: '#7d6bff'   # one accent colour for the whole UI
+  # mode: auto        # light, dark, or auto (dark during standby's night hours),
+  #                   # for themes that have both
+
+# Two background colours, [from, to], over the theme's own.
+# wallpaper: ['#2a2f6b', '#7a3d5c']
+
+weather: weather.forecast_home
+
+# Your apps. Each has a widget on the dashboard, and most open full screen when
+# you tap it (✕ or Esc closes them).
+# Types: vacuum, tv, switch (any on/off entity plus optional sensors), lights,
+# camera. These have only a widget: clock, weather, scene, light, climate, lock,
+# sensor; they are usually written right on the dashboard (see below).
+apps:
+  # Every light on its own, sorted into groups. Groups are the rooms: each is a
+  # section of the app with its scenes, and can be a widget on the dashboard.
+  # `id` defaults to the name in lower case with dashes (Living Room → living-room).
+  - id: lights
+    type: lights
+    name: Lights
+    icon: lightbulb
+    colors: ['#ffd60a', '#ff9f0a']
+    groups:
+      - name: Living Room
+        icon: sofa
+        lights:
+          - light.living_room_ceiling
+          - light.living_room_floor_lamp
+          - light.living_room_spot_1
+          - light.living_room_spot_2
+        scenes:
+          - entity: scene.living_room_rest
+            name: Rest
+            colors: ['#ffb36b', '#ff8a3d']
+          - entity: scene.living_room_city_of_love
+            name: City of Love
+            colors: ['#ff6fb5', '#8a5cff']
+          - entity: scene.living_room_malibu_pink
+            name: Malibu Pink
+            colors: ['#ff9ad5', '#ff5e9c']
+          - entity: scene.living_room_red
+            name: Red
+            colors: ['#ff4d4d', '#c41e3a']
+      - name: Bedroom
+        icon: bed
+        lights: [light.bedroom_ceiling, light.bedside_lamp]
+        scenes:
+          - entity: scene.bedroom_cancun
+            name: Cancun
+            colors: ['#ffb347', '#ff5f8f']
+          - entity: scene.bedroom_read
+            name: Read
+            colors: ['#fff4dc', '#ffd89a']
+          - entity: scene.bedroom_rest
+            name: Rest
+            colors: ['#ffb36b', '#ff8a3d']
+          - entity: scene.bedroom_ruby_romance
+            name: Ruby Romance
+            colors: ['#e0115f', '#7a0a3a']
+          - entity: scene.bedroom_relax
+            name: Relax
+            colors: ['#ffd27a', '#ffa94d']
+      - id: office
+        name: Office
+        icon: laptop
+        lights: [light.desk_lamp, light.office_spot_1, light.office_spot_2]
+        scenes:
+          - entity: scene.office_concentrate
+            name: Concentrate
+            colors: ['#f4f8ff', '#bcd6ff']
+          - entity: scene.office_energize
+            name: Energize
+            colors: ['#ffffff', '#9cc8ff']
+          - entity: scene.office_read
+            name: Read
+            colors: ['#fff4dc', '#ffd89a']
+          - entity: scene.office_relax
+            name: Relax
+            colors: ['#ffd27a', '#ffa94d']
+          - entity: scene.office_lily
+            name: Lily
+            colors: ['#ffc2e0', '#c77dff']
+          - entity: scene.office_coastal_nights
+            name: Coastal Nights
+            colors: ['#4fc3f7', '#283593']
+          - entity: scene.office_crazy_mate
+            name: Crazy Mate
+            colors: ['#b4ff5c', '#ff5ec4']
+          - entity: scene.office_nightlight
+            name: Nightlight
+            colors: ['#ff9f43', '#7a3b0c']
+
+  - id: vacuum
+    type: vacuum
+    name: Vacuum
+    icon: bot
+    colors: ['#34c759', '#1f8a3b']
+    vacuum: vacuum.robot_vacuum
+    fullClean: button.robot_vacuum_full_cleaning
+    fullVacuum: button.robot_vacuum_full_vacuum
+    progress: sensor.robot_vacuum_cleaning_progress
+    status: sensor.robot_vacuum_status
+    battery: sensor.robot_vacuum_battery
+
+  - id: tv
+    type: tv
+    name: TV
+    icon: tv
+    colors: ['#5e5ce6', '#3634a3']
+    player: media_player.living_room_tv
+    remote: remote.living_room_tv
+
+  - id: adguard
+    type: switch
+    name: AdGuard
+    icon: shield-check
+    colors: ['#30b0c7', '#0a7285']
+    switch: switch.adguard_home_protection
+    sensors: [sensor.adguard_home_average_processing_speed]
+
+  - id: front-door
+    type: camera
+    name: Front Door
+    icon: cctv
+    colors: ['#ff9f0a', '#d9520b']
+    camera: camera.front_door
+    # Closes after this long without a touch.
+    autoCloseSeconds: 60
+
+# The Home screen: pages of widgets, swiped sideways. Widgets flow into a grid
+# of 5 x 3 cells (on 1280x720) in order; `size` is columns x rows and must be
+# one the widget offers (the first is the default). A page that is full goes
+# on to the next. Leave `dashboard` out for one made from your apps: the clock,
+# the weather, each Lights group, then every app without `hidden: true`.
+#   clock                     a type with no keys
+#   { app: vacuum }           the widget of an app above
+#   { type: lock, entity: … } a widget-only type written right here
+dashboard:
+  - # page 1
+    - clock
+    # ⌄ ⌃ change the target in the 2x2 size.
+    - { type: climate, entity: climate.living_room, name: Living Room, size: 2x2 }
+    - { app: front-door } # a snapshot; tap for the live camera
+    - weather # the `weather:` entity above
+    # One Lights group: its icon toggles it, a tap elsewhere opens it in the app.
+    # Long-press any light widget for a brightness slider.
+    - { app: lights, group: living-room }
+    - { app: lights, group: bedroom }
+    - { app: lights, group: office }
+    - { type: scene, entity: scene.living_room_rest, name: Rest }
+    - { app: vacuum, size: 2x1 }
+    - { app: lights } # every light: how many are on
+    - { app: tv }
+  - # page 2
+    - { app: adguard }
+    - { type: light, entity: light.hallway, name: Hallway }
+    - { type: lock, entity: lock.front_door, name: Front Door }
+    - { type: sensor, entity: sensor.outdoor_temperature, name: Outside, size: 2x1 }
+    - { type: sensor, entity: sensor.outdoor_humidity, name: Humidity }
+
+# Edit the dashboard on the screen: long-press it. Drag to reorder (hold at the
+# edge for the next page), tap the size to change it, – removes, ＋ adds, Done
+# saves to layout.yaml next to this file (it then replaces `dashboard` above;
+# "Reset layout" deletes it). The ＋ gallery offers your apps, Lights groups,
+# clock, weather, and a widget for each entity listed here. Nothing else: the
+# screen can never reach more than this file lists.
+entities:
+  - light.kitchen
+  - scene.bedroom_read
+  - sensor.indoor_temperature
+
+# Lock edit mode with a PIN (quote it). The server checks it; the page never sees it.
+# editPin: '1234'
+
+# Runtime packs: app types, faces or themes built with `npm run build:addon`,
+# copied to /config/addons/<name>/. Only the ones listed here load. They run in
+# the browser like built-in ones, so only add packs you trust. See CONTRIBUTING.md.
+# addons: [garage-door]
+
+# Things happening in Home Assistant that open an app on their own, over
+# everything (also wakes from standby).
+#   entity: an event.* entity (doorbell ring, button press) fires every time it
+#           changes. Any other entity fires when its state changes to `to`.
+#   open:   the app ID to open.
+events:
+  - entity: event.front_door_doorbell
+    open: front-door
+    # Optional: only these event types fire. Leave out for all.
+    eventTypes: [ring]
+    # Optional: shown on the camera view.
+    message: Someone is at the door
+
+  # Motion on the driveway opens the same camera, without a message:
+  # - entity: binary_sensor.driveway_motion
+  #   to: 'on'
+  #   open: front-door
+
+# Color swatches in the Lights app. Use `kelvin` for whites, `rgb` for colors.
+colors:
+  - { name: Warm white, kelvin: 2200 }
+  - { name: Soft white, kelvin: 2700 }
+  - { name: Neutral, kelvin: 4000 }
+  - { name: Daylight, kelvin: 6500 }
+  - { name: Red, rgb: [255, 59, 48] }
+  - { name: Orange, rgb: [255, 149, 0] }
+  - { name: Pink, rgb: [255, 55, 145] }
+  - { name: Purple, rgb: [175, 82, 222] }
+  - { name: Blue, rgb: [10, 132, 255] }
+  - { name: Green, rgb: [48, 209, 88] }
+
+# Standby: after `afterSeconds` without a touch, the screen shows faces. Swipe
+# sideways for the next one; tap to wake. A face's `slots` take the same entries
+# as the dashboard, for widgets that can sit on a face (all but tv, switch and
+# camera); a tap on one does that widget's action instead of waking. Each face
+# has its own keys next to `face:`. Faces: big-clock (slot: bottom), modular
+# (color; slots: right1-3), home-modular (color; slots: top1-3, bottom1-3), night.
+# Leave `standby` out for big-clock with the weather, and night from 22 to 7.
+standby:
+  afterSeconds: 90
+  faces:
+    - face: modular
+      color: '#ff9f0a'
+      slots:
+        right1: weather
+        right2: { type: climate, entity: climate.living_room, name: Living Room }
+        right3: { app: lights }
+    - face: home-modular
+      color: '#5e5ce6'
+      slots:
+        top1: clock
+        top2: { app: lights, group: living-room }
+        top3: { type: lock, entity: lock.front_door, name: Front Door }
+        bottom1: { type: scene, entity: scene.living_room_rest, name: Rest }
+        bottom2: { app: vacuum }
+        bottom3: { type: sensor, entity: sensor.outdoor_temperature, name: Outside }
+    - face: big-clock
+      slots: { bottom: weather }
+  # No night face in the demo (from = to: never), so visitors always see the faces above.
+  night:
+    hours: { from: 0, to: 0 }
