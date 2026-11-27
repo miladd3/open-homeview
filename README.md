@@ -1,8 +1,10 @@
 # Open HomeView
 
-![Open HomeView dashboard](src/themes/glass/preview.png)
+![Open HomeView: toggling rooms, a scene, the doorbell camera and standby](docs/demo.gif)
 
 An Apple Home style wall dashboard for [Home Assistant](https://www.home-assistant.io/), built for a touch screen in landscape (1280×720). See all built-in widgets, standby faces, and themes in the [gallery](docs/gallery.md).
+
+**[Try the live demo →](https://miladd3.github.io/open-homeview/)** It runs in your browser against a fake Home Assistant, so you can tap everything.
 
 - **One container, one YAML file.** Rooms, scenes, apps, and entity IDs all live in `kiosk.yaml`. Edit it and the screen reloads by itself.
 - **Your Home Assistant token never reaches the browser.** The container keeps the token and only lets the screen see and control the entities listed in `kiosk.yaml`.
