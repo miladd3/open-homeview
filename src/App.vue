@@ -5,7 +5,7 @@ import { isOverlay, screenOf } from '@/apps'
 import DevToolbar from '@/components/organisms/DevToolbar.vue'
 import StandbyHost from '@/components/organisms/StandbyHost.vue'
 import { useConfigReload } from '@/composables/useConfigReload'
-import { isDemo, listenToSite } from '@/demo'
+import { imitateTouch, isDemo, listenToSite } from '@/demo'
 import { useEvents } from '@/composables/useEvents'
 import { useTouchCursor } from '@/composables/useTouchCursor'
 import { useConfigStore } from '@/stores/config'
@@ -39,6 +39,7 @@ useConfigReload()
 useTouchCursor()
 useThemeHost(config.home)
 if (isDemo && mock) listenToSite(mock, config, kiosk)
+if (isDemo) imitateTouch()
 </script>
 
 <template>
