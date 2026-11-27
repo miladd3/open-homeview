@@ -28,8 +28,9 @@ withDefaults(
   background: var(--surface-bg);
   color: var(--text-primary);
   cursor: pointer;
-  backdrop-filter: var(--surface-filter);
   -webkit-backdrop-filter: var(--surface-filter);
+  // Standard last: the CSS minifier keeps only the last of the pair.
+  backdrop-filter: var(--surface-filter);
   transition:
     transform var(--duration-fast) var(--motion-spring),
     background-color var(--duration-base) ease,

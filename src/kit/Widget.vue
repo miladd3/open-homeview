@@ -41,8 +41,9 @@ const emit = defineEmits<{ tap: [] }>()
   color: var(--text-primary);
   container-type: size;
   cursor: pointer;
-  backdrop-filter: var(--surface-filter);
   -webkit-backdrop-filter: var(--surface-filter);
+  // Standard last: the CSS minifier keeps only the last of the pair.
+  backdrop-filter: var(--surface-filter);
   transition:
     transform var(--duration-base) var(--motion-spring),
     background-color var(--duration-base) ease,

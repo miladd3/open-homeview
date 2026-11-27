@@ -60,8 +60,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   gap: var(--space-l);
   padding: var(--space-l) var(--space-xl);
   background: var(--sheet-bg);
-  backdrop-filter: var(--sheet-filter);
   -webkit-backdrop-filter: var(--sheet-filter);
+  // Standard last: the CSS minifier keeps only the last of the pair.
+  backdrop-filter: var(--sheet-filter);
 
   > .header {
     display: flex;

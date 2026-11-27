@@ -141,8 +141,9 @@ const remainingSeconds = computed(() => Math.ceil(remainingMs.value / 1000))
     background: var(--sheet-bg);
     font-size: 24px;
     font-weight: 600;
-    backdrop-filter: var(--sheet-filter);
     -webkit-backdrop-filter: var(--sheet-filter);
+    // Standard last: the CSS minifier keeps only the last of the pair.
+    backdrop-filter: var(--sheet-filter);
     animation: pulse 1.6s ease-in-out infinite;
   }
 
