@@ -15,6 +15,7 @@
     "format:check": "oxfmt --check",
     "schema": "UPDATE_SCHEMA=1 vitest run src/config/__tests__/schema.spec.ts",
     "build:addon": "node scripts/build-addon.ts",
+    "build:site": "node scripts/build-site.ts",
     "new": "node scripts/new.ts",
     "gallery": "UPDATE_GALLERY=1 vitest run src/__tests__/folders.spec.ts"
   },

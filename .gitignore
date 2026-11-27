@@ -50,3 +50,6 @@ __screenshots__/
 
 # The on-screen editor saves here in `npm run dev`
 /layout.yaml
+
+# Project site and live demo (npm run build:site)
+/_site/

@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Open HomeView</title>
+    <meta
+      name="description"
+      content="An open source wall dashboard for Home Assistant, built for a 7-inch touch screen. One container, one YAML file, and your token never reaches the browser. Try the live demo."
+    />
+    <meta name="theme-color" content="#101114" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Open HomeView: a wall dashboard for Home Assistant" />
+    <meta
+      property="og:description"
+      content="A touch dashboard for a Raspberry Pi wall screen. Open source, one YAML file, live demo in your browser."
+    />
+    <meta property="og:url" content="https://miladd3.github.io/open-homeview/" />
+    <meta
+      property="og:image"
+      content="https://miladd3.github.io/open-homeview/img/themes-glass.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff9f0a'/%3E%3Cpath d='M16 34 32 20l16 14v12a2 2 0 0 1-2 2H18a2 2 0 0 1-2-2Z' fill='white'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="./">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z" />
+          </svg>
+        </span>
+        Open HomeView
+      </a>
+      <nav class="links" aria-label="Sections">
+        <a href="#demo">Demo</a>
+        <a href="#features">Features</a>
+        <a href="#build">Hardware</a>
+        <a href="#install">Install</a>
+      </nav>
+      <a class="github" href="https://github.com/miladd3/open-homeview">
+        <svg class="icon -filled" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"
+          />
+        </svg>
+        GitHub
+      </a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>Your smart home, <span class="accent">on the wall.</span></h1>
+        <p class="lede">
+          Open HomeView turns a 7-inch touch screen by the door into a dashboard for Home Assistant.
+          One Docker container, one YAML file, and your token never reaches the browser.
+        </p>
+        <div class="actions">
+          <a class="button" href="#demo">Try the live demo</a>
+          <a class="button -quiet" href="https://github.com/miladd3/open-homeview"
+            >View on GitHub</a
+          >
+        </div>
+        <p class="meta">Free and open source (MIT) · Docker images for amd64 and arm64</p>
+      </section>
+
+      <!-- The live demo: the real kiosk, built against a fake Home Assistant (npm run build:site). -->
+      <section id="demo" class="demo" aria-label="Live demo">
+        <div class="device">
+          <div class="bezel">
+            <div class="screen" id="screen">
+              <iframe
+                id="kiosk"
+                src="demo/"
+                title="Open HomeView live demo"
+                width="1280"
+                height="720"
+                allow="fullscreen"
+              ></iframe>
+              <div class="loading" id="loading">Loading the demo…</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="segmented" role="radiogroup" aria-label="Theme">
+            <button type="button" role="radio" aria-checked="true" data-theme="glass">Glass</button>
+            <button type="button" role="radio" aria-checked="false" data-theme="liquid-glass">
+              Liquid glass
+            </button>
+            <button type="button" role="radio" aria-checked="false" data-theme="flat-light">
+              Flat light
+            </button>
+          </div>
+          <div class="tools">
+            <button type="button" class="chip -ring" data-action="ring">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+              Ring the doorbell
+            </button>
+            <button type="button" class="chip" data-action="sleep">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+              Standby
+            </button>
+            <button type="button" class="chip" id="fullscreen">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+                />
+              </svg>
+              Full screen
+            </button>
+          </div>
+        </div>
+        <ul class="hints">
+          <li><b>Tap</b> a room's icon to switch it, or the card to open it</li>
+          <li><b>Long-press</b> a light for brightness</li>
+          <li><b>Swipe</b> or drag sideways for page two</li>
+          <li><b>Long-press</b> the background to edit the layout</li>
+        </ul>
+        <p class="note">
+          This runs in your browser against a fake Home Assistant. Nothing you tap leaves this page.
+        </p>
+      </section>
+
+      <section id="features" class="section">
+        <div class="intro">
+          <h2>Made for a screen in the hallway</h2>
+          <p>
+            Big touch targets, instant feedback, and nothing to log in to. Everything below is in
+            the demo above.
+          </p>
+        </div>
+        <dl class="features">
+          <div>
+            <dt>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+              </svg>
+              Your token stays on the server
+            </dt>
+            <dd>
+              The container holds the Home Assistant token and only lets the screen see and control
+              the entities you list. Nobody can lift it off the screen in your hallway.
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2ZM9 13h6M9 17h4"
+                />
+              </svg>
+              One YAML file
+            </dt>
+            <dd>
+              Rooms, scenes, apps and entity IDs live in <code>kiosk.yaml</code>, with autocomplete
+              in your editor. Save it and the screen reloads by itself.
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M13 2 3 14h9l-1 8 10-12h-9Z" />
+              </svg>
+              Fast on a Raspberry Pi
+            </dt>
+            <dd>
+              Taps update right away. Every theme has a <code>lite</code> mode without blur, so even
+              a Pi 3 keeps up.
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+              It reacts to your home
+            </dt>
+            <dd>
+              A doorbell ring opens the camera over everything, even from standby. Any entity can
+              open any app.
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+              A clock when idle
+            </dt>
+            <dd>
+              Standby faces show the time, the weather and the widgets you pick, plus a dim red
+              night face for the hallway at 3 a.m.
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2 2 7l10 5 10-5Zm-10 10 10 5 10-5M2 17l10 5 10-5" />
+              </svg>
+              Yours to change
+            </dt>
+            <dd>
+              Three themes, drag-and-drop editing on the screen, and runtime packs for your own
+              widgets, faces and themes. No rebuild needed.
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="section">
+        <div class="intro">
+          <h2>How it works</h2>
+          <p>The screen only ever talks to the container. The container talks to Home Assistant.</p>
+        </div>
+        <ol
+          class="flow"
+          aria-label="The wall screen connects to the Open HomeView container, which connects to Home Assistant with the token."
+        >
+          <li class="node">
+            <span class="node-title">Wall screen</span>
+            <span class="node-text">A Pi, a tablet or any browser. No token, no login.</span>
+          </li>
+          <li class="link" aria-hidden="true"><span>only entities in kiosk.yaml</span></li>
+          <li class="node -main">
+            <span class="node-title">Open HomeView</span>
+            <span class="node-text"
+              >One Docker container. It serves the screen, holds the token and filters every
+              call.</span
+            >
+          </li>
+          <li class="link" aria-hidden="true"><span>token added here</span></li>
+          <li class="node">
+            <span class="node-title">Home Assistant</span>
+            <span class="node-text"
+              >Use a non-admin user, so even a leaked token can't change settings.</span
+            >
+          </li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <div class="intro">
+          <h2>Three themes, four standby faces</h2>
+          <p>Switch with one line in <code>kiosk.yaml</code>, or add your own as a pack.</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img
+              src="img/themes-glass.png"
+              alt="Glass theme"
+              loading="lazy"
+              width="640"
+              height="360"
+            />
+            <figcaption>Glass</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="img/themes-liquid-glass.png"
+              alt="Liquid glass theme"
+              loading="lazy"
+              width="640"
+              height="360"
+            />
+            <figcaption>Liquid glass</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="img/themes-flat-light.png"
+              alt="Flat light theme"
+              loading="lazy"
+              width="640"
+              height="360"
+            />
+            <figcaption>Flat light</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="img/faces-modular.png"
+              alt="Modular standby face"
+              loading="lazy"
+              width="640"
+              height="360"
+            />
+            <figcaption>Modular face</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="img/faces-home-modular.png"
+              alt="Home modular standby face"
+              loading="lazy"
+              width="640"
+              height="360"
+            />
+            <figcaption>Home modular face</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="img/faces-big-clock.png"
+              alt="Big clock standby face"
+              loading="lazy"
+              width="640"
+              height="360"
+            />
+            <figcaption>Big clock face</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section split">
+        <div class="intro -left">
+          <h2>Your whole wall in one file</h2>
+          <p>
+            List your apps, put them on the dashboard, and pick what wakes the screen. The container
+            reads this file and refuses everything it doesn't list.
+          </p>
+          <p>
+            <a
+              class="more"
+              href="https://github.com/miladd3/open-homeview/blob/main/docs/configuration.md"
+              >Read the configuration reference</a
+            >
+          </p>
+        </div>
+        <pre class="code"><code><span class="k">theme</span>: glass
+<span class="k">weather</span>: weather.forecast_home
+
+<span class="k">apps</span>:
+  - <span class="k">id</span>: lights
+    <span class="k">type</span>: lights
+    <span class="k">groups</span>:
+      - <span class="k">name</span>: Living Room
+        <span class="k">lights</span>: [light.ceiling, light.floor_lamp]
+  - <span class="k">id</span>: front-door
+    <span class="k">type</span>: camera
+    <span class="k">camera</span>: camera.front_door
+
+<span class="k">dashboard</span>:
+  - - clock
+    - weather
+    - { <span class="k">app</span>: lights, <span class="k">group</span>: living-room }
+    - { <span class="k">type</span>: lock, <span class="k">entity</span>: lock.front_door }
+
+<span class="k">events</span>:
+  - <span class="k">entity</span>: event.front_door_doorbell
+    <span class="k">open</span>: front-door   <span class="c"># ring opens the camera</span></code></pre>
+      </section>
+
+      <section id="build" class="section">
+        <div class="intro">
+          <h2>The hardware</h2>
+          <p>
+            The project was built on this exact screen: the official 7-inch display in a white case,
+            on a hallway wall.
+          </p>
+        </div>
+        <ul class="parts">
+          <li>
+            <span class="part-name">Raspberry Pi 5</span>
+            <span class="part-text"
+              >2 GB is plenty for one browser. A Pi 4 works too, with
+              <code>graphics: lite</code>.</span
+            >
+            <a class="part-link" href="https://www.raspberrypi.com/products/raspberry-pi-5/"
+              >raspberrypi.com</a
+            >
+          </li>
+          <li>
+            <span class="part-name">Touch Display 2 (7") with white case</span>
+            <span class="part-text"
+              >Waveshare's case around the official 720×1280 DSI touch screen. About €124.</span
+            >
+            <a class="part-link" href="https://www.amazon.nl/dp/B0FPG34LNV">Amazon.nl</a>
+          </li>
+          <li>
+            <span class="part-name">Belkin 30 W USB-C charger</span>
+            <span class="part-text"
+              >Enough for a screen and a browser. The Pi only wants 5 A for power-hungry USB
+              devices. About €15.</span
+            >
+            <a class="part-link" href="https://www.amazon.nl/dp/B0B3NDR9PK">Amazon.nl</a>
+          </li>
+        </ul>
+        <p class="after">
+          Then follow the
+          <a
+            class="more"
+            href="https://github.com/miladd3/open-homeview/blob/main/docs/raspberry-pi-kiosk.md"
+            >Raspberry Pi kiosk guide</a
+          >: Pi OS Lite, <code>cage</code> and Chromium, booting straight into the dashboard.
+        </p>
+      </section>
+
+      <section id="install" class="section">
+        <div class="intro">
+          <h2>Running in two minutes</h2>
+          <p>On any machine that can reach Home Assistant.</p>
+        </div>
+        <div class="install">
+          <div class="code-head">
+            <span>compose.yaml</span>
+            <button type="button" class="copy" data-copy="compose">Copy</button>
+          </div>
+          <pre class="code" id="compose"><code>services:
+  open-homeview:
+    image: ghcr.io/miladd3/open-homeview:latest
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      HA_URL: http://homeassistant.local:8123
+      HA_TOKEN: your-long-lived-access-token
+    volumes:
+      - ./config:/config</code></pre>
+        </div>
+        <p class="after">
+          Run <code>docker compose up -d</code>, open <code>http://&lt;server&gt;:8080</code>, then
+          follow
+          <a
+            class="more"
+            href="https://github.com/miladd3/open-homeview/blob/main/docs/getting-started.md"
+            >Getting started</a
+          >
+          to make a token and your first <code>kiosk.yaml</code>.
+        </p>
+        <div class="actions">
+          <a class="button" href="https://github.com/miladd3/open-homeview">Get it on GitHub</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Open HomeView · MIT license</span>
+      <span>Not affiliated with Apple, Home Assistant or Raspberry Pi.</span>
+    </footer>
+
+    <script src="main.js"></script>
+  </body>
+</html>
